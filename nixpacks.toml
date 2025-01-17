@@ -1,0 +1,2 @@
+[system]
+packages = ["gcc", "g++", "python3-dev"]
