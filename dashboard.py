@@ -189,4 +189,6 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
 
 # Run the app
 if __name__ == '__main__':
-    app.run_server(debug=True, host='0.0.0.0', port=8000)
+    port = int(os.environ.get('PORT', 8000))
+    app.run_server(debug=True, host='0.0.0.0', port=port)
+
