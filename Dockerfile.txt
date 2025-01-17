@@ -1,4 +1,5 @@
 # Usa una imagen base completa de Python que incluye pip
+F# Usa una imagen base completa de Python que incluye pip
 FROM python:3.10
 
 # Establece el directorio de trabajo
@@ -16,4 +17,5 @@ EXPOSE $PORT
 
 # Comando para iniciar el servidor
 CMD ["gunicorn", "dashboard_corrected:app.server", "--workers=4", "--bind", "0.0.0.0:$PORT"]
+
 
