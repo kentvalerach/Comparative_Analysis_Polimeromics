@@ -10,3 +10,6 @@ Cython==0.29.36
 sqlalchemy==2.0.15
 gunicorn==21.0.1
 Werkzeug==2.3.7   # Soporte para Flask en Railway
+
+
+
