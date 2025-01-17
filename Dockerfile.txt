@@ -1,19 +1,19 @@
-# Usa una imagen base más completa que incluye pip preinstalado
+# Usa una imagen base completa de Python que incluye pip
 FROM python:3.10
 
 # Establece el directorio de trabajo
 WORKDIR /app
 
-# Copia los archivos necesarios al contenedor
+# Copia todos los archivos al contenedor
 COPY . /app/
 
-# Actualiza pip e instala las dependencias
+# Actualiza pip e instala dependencias
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 # Exponer el puerto dinámico
 EXPOSE $PORT
 
-# Define el comando de inicio
+# Comando para iniciar el servidor
 CMD ["gunicorn", "dashboard_corrected:app.server", "--workers=4", "--bind", "0.0.0.0:$PORT"]
 
