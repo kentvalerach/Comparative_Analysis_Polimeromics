@@ -1,2 +1,3 @@
-[system]
-packages = ["gcc", "g++", "python3-dev"]
+[phases.setup]
+runtime = "python@3.10"
+
