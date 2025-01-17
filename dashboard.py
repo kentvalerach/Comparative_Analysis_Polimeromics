@@ -1,46 +1,28 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 import dash
 from dash import dcc, html, Input, Output, State
 import pandas as pd
-import psycopg2
+from sqlalchemy import create_engine
 import os
 
-import pandas as pd
-import psycopg2
-import os
+# Obtener la URL de la base de datos desde las variables de entorno
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-# Conexión a la base de datos PostgreSQL
-DATABASE_URL = os.getenv('DATABASE_URL')  # Asegúrate de configurar esta variable en Railway
+# Crear un motor SQLAlchemy
+engine = create_engine(DATABASE_URL)
 
 try:
-    # Establecer conexión
-    conn = psycopg2.connect(DATABASE_URL)
-    print("Conexión exitosa a la base de datos.")
-
-    # Cargar datos desde las tablas PostgreSQL
-    biogrid_data = pd.read_sql_query("SELECT * FROM biogrid_homosapiens", conn)
-    rcsb_data = pd.read_sql_query("SELECT * FROM rcsb_pdb", conn)
-
+    # Usar el motor SQLAlchemy con pandas
+    biogrid_data = pd.read_sql_query("SELECT * FROM biogrid_homosapiens", engine)
+    rcsb_data = pd.read_sql_query("SELECT * FROM rcsb_pdb", engine)
     print("Datos cargados exitosamente.")
-
 except Exception as e:
-    print(f"Error al conectarse o cargar datos: {e}")
+    print(f"Error al cargar los datos: {e}")
     biogrid_data = None
     rcsb_data = None
 
-finally:
-    if 'conn' in locals() and conn:
-        conn.close()
-        print("Conexión cerrada.")
-
 # Normalize key columns for the join
-biogrid_data["official_symbol"] = biogrid_data["official_symbol"].str.lower()
-rcsb_data["macromolecule_name"] = rcsb_data["macromolecule_name"].str.lower()
+biogrid_data["official_symbol"] = biogrid_data["official_symbol"].str.lower().str.strip()
+rcsb_data["macromolecule_name"] = rcsb_data["macromolecule_name"].str.lower().str.strip()
 
 # Drop the 'sequence' column from RCSB
 if 'sequence' in rcsb_data.columns:
@@ -53,6 +35,12 @@ combined_data = biogrid_data.merge(
     right_on="macromolecule_name",
     how="inner"
 ).reset_index(drop=True)
+
+# Asegúrate de que las columnas renombradas sean claras
+combined_data = combined_data.rename(columns={
+    "unique_id_x": "unique_id_biogrid",
+    "unique_id_y": "unique_id_rcsb"
+})
 
 # Initialize Dash app
 app = dash.Dash(__name__)
@@ -145,11 +133,13 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     current_record = combined_data.iloc[new_index]
 
     # BIOGRID details: show all columns
-    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in biogrid_data.columns])
+    biogrid_details = "\n".join([
+        f"{col}: {current_record.get(col, 'N/A')}" for col in biogrid_data.columns
+    ])
 
     # RCSB details: show all columns with special handling for long rows
     rcsb_details = "\n".join([
-        f"{col}: {current_record[col]}" if col not in ['crystal_growth_procedure', 'structure_title']
+        f"{col}: {current_record.get(col, 'N/A')}" if col not in ['crystal_growth_procedure', 'structure_title']
         else f"{col}: {current_record[col][:100]}..."  # Limit long rows to 100 characters
         for col in rcsb_data.columns
     ])
@@ -198,5 +188,5 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
 
 # Run the app
-port = int(os.environ.get("PORT", 8000))
-app.run_server(debug=False, host='0.0.0.0', port=port)
+if __name__ == '__main__':
+    app.run_server(debug=True, host='0.0.0.0', port=8000)
