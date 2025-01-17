@@ -9,7 +9,7 @@ RUN pip install -r requirements.txt
 
 EXPOSE $PORT
 
-CMD ["gunicorn", "dashboard_corrected:app.server", "--workers=4", "--bind", "0.0.0.0:$PORT"]
+CMD ["gunicorn", "dashboard_corrected:app.server", "--workers=4", "--bind", "0.0.0.0:8080"]
 
 
 
