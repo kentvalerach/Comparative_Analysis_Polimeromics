@@ -15,7 +15,7 @@ RUN pip install -r requirements.txt
 EXPOSE $PORT
 
 # Comando para iniciar la aplicación
-CMD ["gunicorn", "dashboard_corrected:app.server", "--workers=4", "--bind", "0.0.0.0:${PORT:-8080}"]
+CMD ["gunicorn", "dashboard_corrected:app.server", "--workers=4", "--bind", "0.0.0.0: {PORT:-8080}"]
 
 
 
