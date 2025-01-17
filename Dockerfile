@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r re
 EXPOSE 8080
 
 # Comando para ejecutar la aplicación
-CMD ["gunicorn", "dashboard:app", "--workers=4", "--bind=0.0.0.0:8080"]
+CMD ["gunicorn", "dashboard:app", "--workers=4", "--bind=0.0.0.0:8000"]
 
 
 
