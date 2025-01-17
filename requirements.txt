@@ -6,4 +6,6 @@ numpy==1.26.4
 psycopg2-binary==2.9.10
 Flask==2.3.2
 Cython==0.29.36
+--only-binary=scikit-learn
 scikit-learn==1.2.2
+
