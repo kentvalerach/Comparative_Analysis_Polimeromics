@@ -1,9 +1,6 @@
 [phases.setup]
 runtime = "python@3.10"
 
-[phases.install]
-# Instalar las dependencias desde requirements.txt
-cmds = ["pip install -r requirements.txt"]
 
 [phases.start]
 # Comando para iniciar la aplicación usando Gunicorn
