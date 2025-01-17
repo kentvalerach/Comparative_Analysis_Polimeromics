@@ -1,5 +1,5 @@
+
 # Usa una imagen base completa de Python que incluye pip
-F# Usa una imagen base completa de Python que incluye pip
 FROM python:3.10
 
 # Establece el directorio de trabajo
