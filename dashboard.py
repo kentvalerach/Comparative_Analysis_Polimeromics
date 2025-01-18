@@ -44,6 +44,8 @@ combined_data = combined_data.rename(columns={
 
 # Initialize Dash app
 app = dash.Dash(__name__)
+server = app.server  # Exponer el servidor Flask
+
 
 app.layout = html.Div([
     html.H1("Comparative Analysis Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
@@ -188,7 +190,9 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
 
 # Run the app
+
+
 if __name__ == '__main__':
-    app.run_server(debug=True, host='0.0.0.0', port=8000)
+    app.run(debug=True, host='0.0.0.0', port=8000)
 
 
