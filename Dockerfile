@@ -1,21 +1,27 @@
 # Usar Python 3.11 como base
 FROM python:3.11-slim
 
-# Configurar directorio de trabajo
+# Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos necesarios al contenedor
-COPY . .
+# Copiar primero los archivos de dependencias para aprovechar la caché de Docker
+COPY requirements.txt .
 
 # Instalar dependencias
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Exponer el puerto para el contenedor
+# Copiar el resto de los archivos del proyecto al contenedor
+COPY . .
+
+# Establecer permisos (opcional, dependiendo de la configuración)
+RUN chmod -R 755 /app
+
+# Exponer el puerto que usará la aplicación
 EXPOSE 8000
 
 # Comando de inicio
-CMD ["gunicorn", "dashboard:app.server", "--workers=4", "--bind=0.0.0.0:8000"]
+CMD ["gunicorn", "dashboard:server", "--workers=4", "--bind=0.0.0.0:8000", "--timeout=120"]
 
 
 
