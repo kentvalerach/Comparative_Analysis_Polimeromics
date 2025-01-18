@@ -21,8 +21,8 @@ RUN chmod -R 755 /app
 EXPOSE 8000
 
 # Comando de inicio
-CMD ["gunicorn", "dashboard:server", "--workers=4", "--bind=0.0.0.0:$PORT", "--timeout=120", "--preload"]
 
+CMD ["gunicorn", "dashboard:server", "--workers=4", "--bind=0.0.0.0:8000"]
 
 
 
