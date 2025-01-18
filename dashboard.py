@@ -191,6 +191,8 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
 
 # Run the app
 
+server = app.server
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
