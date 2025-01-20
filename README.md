@@ -1,5 +1,105 @@
 # Comparative Analysis Dashboard
 
+## Overview
+The **Comparative Analysis Dashboard** is an integral component of the **Polimeromics** project, developed to provide advanced insights into biological and structural data integration. This dashboard emphasizes the relationships between molecular interactions and structural features, enabling researchers and professionals to explore, analyze, and interpret complex datasets efficiently.
+
+The project combines data from two major sources:
+- **BIOGRID**: A database focusing on molecular interactions, particularly genes and proteins relevant to *Homo sapiens*.
+- **RCSB PDB**: A repository of structural and biophysical data for macromolecules, including proteins and nucleic acids.
+
+---
+
+## Features of the Dashboard
+
+1. **Data Visualization**:
+   - Interactive graphs and comparative analyses of datasets from BIOGRID and RCSB PDB.
+   - Detailed exploration of molecular interaction patterns and biophysical features.
+
+2. **Data Integration**:
+   - Alignment of molecular interaction data with structural features to reveal patterns influencing the oligomeric states of proteins.
+
+3. **Dynamic Filtering**:
+   - Filter and sort datasets based on customizable parameters, such as protein names, pH levels, and temperature ranges.
+
+4. **Predictive Insights**:
+   - Displays the application of machine learning models, particularly XGBoost, for predicting protein oligomeric states.
+
+---
+
+## Applications and Potential Developments
+
+### Applications:
+1. **Biomedical Research**:
+   - Identification of molecular interaction targets for drug development.
+   - Exploration of structural changes in proteins related to diseases such as Alzheimer’s and cancer.
+
+2. **Biotechnology**:
+   - Advancing protein engineering by understanding structural dependencies.
+   - Developing tools for macromolecular modeling based on integrated datasets.
+
+3. **Education and Training**:
+   - Serving as a teaching tool for molecular biology and bioinformatics.
+   - Enabling interactive exploration of biological and structural data for students and researchers.
+
+### Potential Developments:
+1. **Enhanced Machine Learning Models**:
+   - Incorporation of deep learning techniques to improve predictions of protein states.
+   - Exploration of additional datasets for broader predictive capabilities.
+
+2. **Cloud Integration**:
+   - Deployment of the dashboard on scalable cloud platforms for real-time analytics with larger datasets.
+
+3. **Collaboration Tools**:
+   - Adding features for collaborative research, such as shared annotations and dataset uploads.
+
+4. **Expanded Dataset Integration**:
+   - Inclusion of additional biological databases to provide a more comprehensive view of molecular interactions and structures.
+
+---
+
+## Deployment
+
+### Requirements
+- **Python**: Version 3.11 or higher.
+- **Dependencies**: Listed in `requirements.txt`.
+
+### Local Deployment
+```bash
+# Clone the repository
+git clone https://github.com/kentvalerach/Polimeromic.git
+
+# Navigate to the project folder
+cd ComparativeAnalysisDashboard
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the dashboard locally
+python dashboard.py
+```
+
+### Production Deployment
+```bash
+# Using Gunicorn
+gunicorn dashboard:server --workers=4 --bind=0.0.0.0:8000 --timeout 120
+```
+
+---
+
+## Contact
+If you have any questions or would like to collaborate, feel free to contact me:
+- **Email**: valerakent@yahoo.com
+
+---
+
+**Built with passion for molecular research.**
+
+
+
+
+
+# Comparative Analysis Dashboard
+
 **Comparative Analysis Dashboard** es una herramienta interactiva desarrollada como parte del proyecto Polimeromics. Este dashboard integra datos biológicos y estructurales provenientes de las bases de datos BIOGRID y RCSB PDB, ofreciendo una plataforma para explorar, analizar y visualizar las relaciones moleculares y estructurales en profundidad.
 
 ---
