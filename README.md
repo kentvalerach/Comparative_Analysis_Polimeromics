@@ -2,6 +2,7 @@
 
 ## Overview
 The **Comparative Analysis Dashboard** is an integral component of the **Polimeromics** project, developed to provide advanced insights into biological and structural data integration. This dashboard emphasizes the relationships between molecular interactions and structural features, enabling researchers and professionals to explore, analyze, and interpret complex datasets efficiently.
+**[Comparative Analysis Dashboard](https://comparativeanalysispolimeromic-production.up.railway.app/)**:
 
 The project combines data from two major sources:
 - **BIOGRID**: A database focusing on molecular interactions, particularly genes and proteins relevant to *Homo sapiens*.
