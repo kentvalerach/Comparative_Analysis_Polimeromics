@@ -102,6 +102,7 @@ If you have any questions or would like to collaborate, feel free to contact me:
 # Comparative Analysis Dashboard
 
 **Comparative Analysis Dashboard** es una herramienta interactiva desarrollada como parte del proyecto Polimeromics. Este dashboard integra datos biológicos y estructurales provenientes de las bases de datos BIOGRID y RCSB PDB, ofreciendo una plataforma para explorar, analizar y visualizar las relaciones moleculares y estructurales en profundidad.
+**[Comparative Analysis Dashboard](https://comparativeanalysispolimeromic-production.up.railway.app/)**:
 
 ---
 
