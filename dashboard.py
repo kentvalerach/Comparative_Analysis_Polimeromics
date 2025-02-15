@@ -40,6 +40,13 @@ LIMIT 1000
 
 combined_data = get_data(combined_query)
 
+# Asegúrate de que las columnas renombradas sean claras
+combined_data = combined_data.rename(columns={
+    "unique_id_x": "unique_id_biogrid",
+    "unique_id_y": "unique_id_rcsb"
+})
+
+
 # Initialize Dash app
 app = dash.Dash(__name__)
 server = app.server  # Exponer el servidor Flask
