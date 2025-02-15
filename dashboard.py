@@ -11,22 +11,19 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 # Crear un motor SQLAlchemy
 engine = create_engine(DATABASE_URL)
 
-def fetch_data(limit=1000):
-    """Consulta optimizada con join y paginación."""
+def fetch_record(offset):
+    """Consulta optimizada con JOIN en SQL para obtener un solo registro a la vez."""
     query = f"""
     SELECT * FROM biogrid_homosapiens 
     INNER JOIN rcsb_pdb 
     ON LOWER(biogrid_homosapiens.official_symbol) = LOWER(rcsb_pdb.macromolecule_name)
-    LIMIT {limit};
+    LIMIT 1 OFFSET {offset};
     """
     conn = engine.connect()
     try:
         return pd.read_sql_query(query, conn)
     finally:
-        conn.close()  # ✅ Cierra la conexión después de cada consulta
-
-# Cargar solo una muestra de los datos
-combined_data = fetch_data(limit=5000)
+        conn.close()  # ✅ Cierra la conexión después de la consulta
 
 # Inicializar Dash app
 app = dash.Dash(__name__)
@@ -62,23 +59,6 @@ app.layout = html.Div([
                 'overflowY': 'scroll',
                 'maxHeight': '300px'
             }),
-            html.Div([
-                html.H3("Biomedical and Genetic Insights"),
-                html.P("This data integrates molecular interactions from BIOGRID and structural details from RCSB PDB."),
-                html.Ul([
-                    html.Li("**Drug Discovery**: Identify potential drug targets."),
-                    html.Li("**Gene Function Analysis**: Understand functional roles of genes and proteins."),
-                    html.Li("**Precision Medicine**: Support personalized therapeutic approaches."),
-                ]),
-                html.P("You can access the Python script in the repository: "),
-                html.A("https://github.com/kentvalerach/Polimeromic", href="https://github.com/kentvalerach/Polimeromic", target="_blank"),
-            ], style={
-                'marginTop': '20px',
-                'padding': '10px',
-                'border': '1px solid black',
-                'backgroundColor': '#f9f9f9',
-                'lineHeight': '1.6'
-            }),
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'}),
     ], style={'display': 'flex', 'justifyContent': 'space-between'}),
 ])
@@ -99,57 +79,57 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     # Si no hay índice actual, empieza en 0
     current_index = 0 if current_index is None else int(current_index.split(": ")[1])
 
-    # Actualizar índice según el botón presionado
-    new_index = current_index + (1 if next_clicks > prev_clicks else -1)
-    new_index = max(0, min(len(combined_data) - 1, new_index))
+    # Ajustar el índice según el botón presionado
+    new_index = max(0, current_index + (1 if next_clicks > prev_clicks else -1))
 
-    # Obtener el registro actual
-    current_record = combined_data.iloc[new_index]
+    # Obtener el registro actual con paginación SQL
+    record = fetch_record(new_index)
+    if record.empty:
+        return f"Current index: {new_index}", "No data", "No data", {}, {}
 
     # BIOGRID Details
-    biogrid_details = "\n".join([f"{col}: {current_record.get(col, 'N/A')}" for col in combined_data.columns if "biogrid" in col])
+    biogrid_details = "\n".join([f"{col}: {record.iloc[0][col]}" for col in record.columns if "biogrid" in col])
 
     # RCSB Details
     rcsb_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}"[:100] + "..." if len(str(current_record.get(col, ""))) > 100 else f"{col}: {current_record.get(col, 'N/A')}"
-        for col in combined_data.columns if "rcsb" in col
+        f"{col}: {record.iloc[0][col]}" if len(str(record.iloc[0][col])) < 100 else f"{col}: {str(record.iloc[0][col])[:100]}..."
+        for col in record.columns if "rcsb" in col
     ])
 
-    # Muestra representativa para gráficos
-    sample_data = combined_data.sample(n=5000)
-
-    # Gráfico 1
+    # Gráfico 1: Relación entre `percent_solvent_content` y `ph`
     comparison_plot_1 = {
         'data': [
             go.Scattergl(
-                x=sample_data["percent_solvent_content"], y=sample_data["ph"],
-                mode='markers', marker={'color': 'lightblue', 'size': 8},
-                name='All Records'
-            ),
-            go.Scattergl(
-                x=[current_record["percent_solvent_content"]], y=[current_record["ph"]],
-                mode='markers', marker={'color': 'blue', 'size': 12, 'symbol': 'star'},
+                x=[record.iloc[0]["percent_solvent_content"]],
+                y=[record.iloc[0]["ph"]],
+                mode='markers',
+                marker={'color': 'blue', 'size': 12, 'symbol': 'star'},
                 name='Selected Record'
             )
         ],
-        'layout': {'title': 'Percent Solvent Content vs pH', 'xaxis': {'title': 'Percent Solvent Content'}, 'yaxis': {'title': 'pH'}}
+        'layout': {
+            'title': 'Percent Solvent Content vs pH',
+            'xaxis': {'title': 'Percent Solvent Content'},
+            'yaxis': {'title': 'pH'}
+        }
     }
 
-    # Gráfico 2
+    # Gráfico 2: Relación entre `temp_k` y `molecular_weight`
     comparison_plot_2 = {
         'data': [
             go.Scattergl(
-                x=sample_data["temp_k"], y=sample_data["molecular_weight"],
-                mode='markers', marker={'color': 'lightgreen', 'size': 8},
-                name='All Records'
-            ),
-            go.Scattergl(
-                x=[current_record["temp_k"]], y=[current_record["molecular_weight"]],
-                mode='markers', marker={'color': 'green', 'size': 12, 'symbol': 'star'},
+                x=[record.iloc[0]["temp_k"]],
+                y=[record.iloc[0]["molecular_weight"]],
+                mode='markers',
+                marker={'color': 'green', 'size': 12, 'symbol': 'star'},
                 name='Selected Record'
             )
         ],
-        'layout': {'title': 'Temperature (K) vs Molecular Weight', 'xaxis': {'title': 'Temp (K)'}, 'yaxis': {'title': 'Molecular Weight'}}
+        'layout': {
+            'title': 'Temperature (K) vs Molecular Weight',
+            'xaxis': {'title': 'Temp (K)'},
+            'yaxis': {'title': 'Molecular Weight'}
+        }
     }
 
     return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
