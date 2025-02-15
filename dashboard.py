@@ -2,7 +2,7 @@ import dash
 from dash import dcc, html, Input, Output, State
 import pandas as pd
 import plotly.graph_objs as go
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import os
 
 # Obtener la URL de la base de datos desde las variables de entorno
@@ -11,7 +11,7 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 # Crear un motor SQLAlchemy
 engine = create_engine(DATABASE_URL)
 
-# Contar la cantidad de registros en la base de datos para evitar errores en el OFFSET
+# Contar los registros en la base de datos
 def get_total_records():
     query = """
     SELECT COUNT(*) FROM biogrid_homosapiens 
@@ -20,8 +20,10 @@ def get_total_records():
     """
     conn = engine.connect()
     try:
-        result = conn.execute(query).fetchone()
-        return result[0] if result else 0
+        result = conn.execute(text(query)).fetchone()
+        total = result[0] if result else 0
+        print(f"Total registros en el JOIN: {total}")  # ✅ DEBUG
+        return total
     except Exception as e:
         print(f"Error al contar registros: {e}")
         return 0
@@ -30,7 +32,11 @@ def get_total_records():
 
 # Obtener la cantidad de registros disponibles
 TOTAL_RECORDS = get_total_records()
-print(f"Total registros disponibles en el JOIN: {TOTAL_RECORDS}")
+
+# Verificar si hay datos en la base de datos antes de continuar
+if TOTAL_RECORDS == 0:
+    print("🚨 ERROR: La consulta SQL no encontró coincidencias en el JOIN.")
+    print("Verifica que los valores de 'official_symbol' y 'macromolecule_name' sean correctos.")
 
 # Obtener un solo registro con paginación
 def fetch_record(offset):
@@ -42,8 +48,9 @@ def fetch_record(offset):
     """
     conn = engine.connect()
     try:
-        df = pd.read_sql_query(query, conn)
-        print(df.head())  # Debug: Verificar que hay datos
+        df = pd.read_sql_query(text(query), conn)
+        print(f"Datos recuperados en OFFSET {offset}:")  # ✅ DEBUG
+        print(df.head())  # ✅ Imprimir datos recuperados
         return df
     except Exception as e:
         print(f"Error al obtener registro en OFFSET {offset}: {e}")
@@ -128,7 +135,7 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
         for col in record.columns if "rcsb" in col
     ])
 
-    # Gráfico 1: Relación entre `percent_solvent_content` y `ph`
+    # Gráfico 1
     comparison_plot_1 = {
         'data': [
             go.Scattergl(
@@ -139,14 +146,10 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
                 name='Selected Record'
             )
         ],
-        'layout': {
-            'title': 'Percent Solvent Content vs pH',
-            'xaxis': {'title': 'Percent Solvent Content'},
-            'yaxis': {'title': 'pH'}
-        }
+        'layout': {'title': 'Percent Solvent Content vs pH', 'xaxis': {'title': 'Percent Solvent Content'}, 'yaxis': {'title': 'pH'}}
     }
 
-    # Gráfico 2: Relación entre `temp_k` y `molecular_weight`
+    # Gráfico 2
     comparison_plot_2 = {
         'data': [
             go.Scattergl(
@@ -157,11 +160,7 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
                 name='Selected Record'
             )
         ],
-        'layout': {
-            'title': 'Temperature (K) vs Molecular Weight',
-            'xaxis': {'title': 'Temp (K)'},
-            'yaxis': {'title': 'Molecular Weight'}
-        }
+        'layout': {'title': 'Temperature (K) vs Molecular Weight', 'xaxis': {'title': 'Temp (K)'}, 'yaxis': {'title': 'Molecular Weight'}}
     }
 
     return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
