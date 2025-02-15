@@ -5,4 +5,5 @@ pandas==2.2.3
 sqlalchemy==2.0.15
 psycopg2-binary==2.9.10
 gunicorn==21.0.1
+; sys_platform == 'win32' pywin32==308
 
