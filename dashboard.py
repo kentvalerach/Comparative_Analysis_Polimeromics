@@ -11,8 +11,29 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 # Crear un motor SQLAlchemy
 engine = create_engine(DATABASE_URL)
 
+# Contar la cantidad de registros en la base de datos para evitar errores en el OFFSET
+def get_total_records():
+    query = """
+    SELECT COUNT(*) FROM biogrid_homosapiens 
+    INNER JOIN rcsb_pdb 
+    ON LOWER(biogrid_homosapiens.official_symbol) = LOWER(rcsb_pdb.macromolecule_name);
+    """
+    conn = engine.connect()
+    try:
+        result = conn.execute(query).fetchone()
+        return result[0] if result else 0
+    except Exception as e:
+        print(f"Error al contar registros: {e}")
+        return 0
+    finally:
+        conn.close()
+
+# Obtener la cantidad de registros disponibles
+TOTAL_RECORDS = get_total_records()
+print(f"Total registros disponibles en el JOIN: {TOTAL_RECORDS}")
+
+# Obtener un solo registro con paginación
 def fetch_record(offset):
-    """Consulta optimizada con JOIN en SQL para obtener un solo registro a la vez."""
     query = f"""
     SELECT * FROM biogrid_homosapiens 
     INNER JOIN rcsb_pdb 
@@ -21,9 +42,14 @@ def fetch_record(offset):
     """
     conn = engine.connect()
     try:
-        return pd.read_sql_query(query, conn)
+        df = pd.read_sql_query(query, conn)
+        print(df.head())  # Debug: Verificar que hay datos
+        return df
+    except Exception as e:
+        print(f"Error al obtener registro en OFFSET {offset}: {e}")
+        return pd.DataFrame()
     finally:
-        conn.close()  # ✅ Cierra la conexión después de la consulta
+        conn.close()
 
 # Inicializar Dash app
 app = dash.Dash(__name__)
@@ -77,15 +103,21 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     """Actualiza el dashboard al navegar entre registros."""
     
     # Si no hay índice actual, empieza en 0
-    current_index = 0 if current_index is None else int(current_index.split(": ")[1])
+    if current_index is None or not isinstance(current_index, str):
+        current_index = 0
+    else:
+        try:
+            current_index = int(current_index.split(": ")[1])
+        except ValueError:
+            current_index = 0
 
     # Ajustar el índice según el botón presionado
-    new_index = max(0, current_index + (1 if next_clicks > prev_clicks else -1))
+    new_index = max(0, min(TOTAL_RECORDS - 1, current_index + (1 if next_clicks > prev_clicks else -1)))
 
     # Obtener el registro actual con paginación SQL
     record = fetch_record(new_index)
     if record.empty:
-        return f"Current index: {new_index}", "No data", "No data", {}, {}
+        return f"Current index: {new_index}", "No data available", "No data available", {}, {}
 
     # BIOGRID Details
     biogrid_details = "\n".join([f"{col}: {record.iloc[0][col]}" for col in record.columns if "biogrid" in col])
@@ -100,8 +132,8 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     comparison_plot_1 = {
         'data': [
             go.Scattergl(
-                x=[record.iloc[0]["percent_solvent_content"]],
-                y=[record.iloc[0]["ph"]],
+                x=[record.iloc[0].get("percent_solvent_content", 0)],
+                y=[record.iloc[0].get("ph", 0)],
                 mode='markers',
                 marker={'color': 'blue', 'size': 12, 'symbol': 'star'},
                 name='Selected Record'
@@ -118,8 +150,8 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     comparison_plot_2 = {
         'data': [
             go.Scattergl(
-                x=[record.iloc[0]["temp_k"]],
-                y=[record.iloc[0]["molecular_weight"]],
+                x=[record.iloc[0].get("temp_k", 0)],
+                y=[record.iloc[0].get("molecular_weight", 0)],
                 mode='markers',
                 marker={'color': 'green', 'size': 12, 'symbol': 'star'},
                 name='Selected Record'
@@ -137,3 +169,4 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
 # Ejecutar la aplicación
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
+
