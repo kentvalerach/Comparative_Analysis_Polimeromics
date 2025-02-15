@@ -98,7 +98,7 @@ app.layout = html.Div([
     [State('record-index', 'children')]
 )
 def update_dashboard(prev_clicks, next_clicks, current_index):
-    if current_index is None:
+    if current_index is None or "Current index" not in current_index:
         current_index = 0
     else:
         current_index = int(current_index.split(": ")[1])
@@ -107,8 +107,8 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     new_index = max(0, min(len(combined_data) - 1, new_index))
     current_record = combined_data.iloc[new_index]
 
-    biogrid_details = "\n".join([f"{col}: {current_record.get(col, 'N/A')}" for col in biogrid_data.columns])
-    rcsb_details = "\n".join([f"{col}: {current_record.get(col, 'N/A')}" for col in rcsb_data.columns])
+    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in biogrid_data.columns if col in current_record])
+    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in rcsb_data.columns if col in current_record])
 
     comparison_plot_1 = {
         'data': [
@@ -148,6 +148,7 @@ server = app.server
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
+
 
 
 
