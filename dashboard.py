@@ -140,7 +140,8 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
 
     # Adjust the index based on button clicks
     new_index = current_index + (1 if next_clicks > prev_clicks else -1)
-    new_index = max(0, min(len(combined_data) - 1, new_index))
+    new_index = max(0, min(TOTAL_RECORDS - 1, new_index))
+
 
     # Get the current record
     current_record = combined_data.iloc[new_index]
