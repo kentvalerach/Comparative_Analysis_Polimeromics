@@ -43,23 +43,23 @@ combined_data = get_data(combined_query)
 # Inicializar el índice actual del registro
 index_state = {'index': 0}
 
-# Initialize Dash app
+# Inicializar la aplicación Dash
 app = dash.Dash(__name__)
 server = app.server  # Exponer el servidor Flask
 
 app.layout = html.Div([
     html.H1("Comparative Analysis Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
     
-    # Record navigation
+    # Navegación de registros
     html.Div([
         html.Button("Previous", id='prev-button', n_clicks=0),
         html.Button("Next", id='next-button', n_clicks=0),
         html.Div(id='record-index', style={'marginTop': '10px'}),
     ], style={'textAlign': 'center', 'marginBottom': '20px'}),
 
-    # Main container split into two columns
+    # Contenedor principal dividido en dos columnas
     html.Div([
-        # Left column: Graphs and BIOGRID data
+        # Columna izquierda: gráficos y datos BIOGRID
         html.Div([
             html.H3("Comparison Graphs"),
             dcc.Graph(id='comparison-plot-1'),
@@ -68,7 +68,7 @@ app.layout = html.Div([
             html.Pre(id='biogrid-details', style={'border': '1px solid black', 'padding': '10px'}),
         ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
 
-        # Right column: RCSB data and insights
+        # Columna derecha: datos RCSB y análisis biomédico
         html.Div([
             html.H3("RCSB Data"),
             html.Pre(id='rcsb-details', style={
@@ -101,7 +101,6 @@ app.layout = html.Div([
     prevent_initial_call=True
 )
 def update_dashboard(prev_clicks, next_clicks):
-    # Determinar el índice actual del registro
     ctx = dash.callback_context
     if not ctx.triggered:
         return dash.no_update
@@ -115,8 +114,8 @@ def update_dashboard(prev_clicks, next_clicks):
     new_index = index_state['index']
     current_record = combined_data.iloc[new_index]
 
-    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in biogrid_data.columns if col in current_record])
-    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in rcsb_data.columns if col in current_record])
+    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in biogrid_data.columns if col in combined_data.columns])
+    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in rcsb_data.columns if col in combined_data.columns])
 
     comparison_plot_1 = {
         'data': [
@@ -156,6 +155,7 @@ server = app.server
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
+
 
 
 
