@@ -11,36 +11,19 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 engine = create_engine(DATABASE_URL)
 
 try:
-    # Usar el motor SQLAlchemy con pandas con límite de 100 registros
-    biogrid_data = pd.read_sql_query("SELECT * FROM biogrid_homosapiens LIMIT 1000", engine)
-    rcsb_data = pd.read_sql_query("SELECT * FROM rcsb_pdb LIMIT 1000", engine)
-    print("Datos cargados exitosamente.")
+    # Realizar el merge en SQL y limitar a 100 registros
+    query = """
+        SELECT b.*, r.* 
+        FROM biogrid_homosapiens b
+        INNER JOIN rcsb_pdb r
+        ON LOWER(TRIM(b.official_symbol)) = LOWER(TRIM(r.macromolecule_name))
+        LIMIT 100
+    """
+    combined_data = pd.read_sql_query(query, engine)
+    print("Datos combinados cargados exitosamente desde SQL.")
 except Exception as e:
-    print(f"Error al cargar los datos: {e}")
-    biogrid_data = None
-    rcsb_data = None
-
-# Normalize key columns for the join
-biogrid_data["official_symbol"] = biogrid_data["official_symbol"].str.lower().str.strip()
-rcsb_data["macromolecule_name"] = rcsb_data["macromolecule_name"].str.lower().str.strip()
-
-# Drop the 'sequence' column from RCSB
-if 'sequence' in rcsb_data.columns:
-    rcsb_data = rcsb_data.drop(columns=['sequence'])
-
-# Perform the dynamic join between the tables
-combined_data = biogrid_data.merge(
-    rcsb_data,
-    left_on="official_symbol",
-    right_on="macromolecule_name",
-    how="inner"
-).reset_index(drop=True)
-
-# Asegúrate de que las columnas renombradas sean claras
-combined_data = combined_data.rename(columns={
-    "unique_id_x": "unique_id_biogrid",
-    "unique_id_y": "unique_id_rcsb"
-})
+    print(f"Error al cargar los datos combinados: {e}")
+    combined_data = None
 
 # Initialize Dash app
 app = dash.Dash(__name__)
@@ -112,3 +95,4 @@ app.layout = html.Div([
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
+
