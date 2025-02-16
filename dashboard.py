@@ -40,6 +40,9 @@ LIMIT 1000
 
 combined_data = get_data(combined_query)
 
+# Inicializar el índice actual del registro
+index_state = {'index': 0}
+
 # Initialize Dash app
 app = dash.Dash(__name__)
 server = app.server  # Exponer el servidor Flask
@@ -95,16 +98,21 @@ app.layout = html.Div([
      Output('biomedical-insights', 'children')],
     [Input('prev-button', 'n_clicks'),
      Input('next-button', 'n_clicks')],
-    [State('record-index', 'children')]
+    prevent_initial_call=True
 )
-def update_dashboard(prev_clicks, next_clicks, current_index):
-    if current_index is None or "Current index" not in current_index:
-        current_index = 0
-    else:
-        current_index = int(current_index.split(": ")[1])
+def update_dashboard(prev_clicks, next_clicks):
+    # Determinar el índice actual del registro
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return dash.no_update
 
-    new_index = current_index + (1 if next_clicks > prev_clicks else -1)
-    new_index = max(0, min(len(combined_data) - 1, new_index))
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    if triggered_id == 'next-button':
+        index_state['index'] = min(index_state['index'] + 1, len(combined_data) - 1)
+    elif triggered_id == 'prev-button':
+        index_state['index'] = max(index_state['index'] - 1, 0)
+
+    new_index = index_state['index']
     current_record = combined_data.iloc[new_index]
 
     biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in biogrid_data.columns if col in current_record])
@@ -148,6 +156,7 @@ server = app.server
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
+
 
 
 
