@@ -2,34 +2,18 @@ import dash
 from dash import dcc, html, Input, Output, State
 import pandas as pd
 import plotly.graph_objs as go
-from sqlalchemy import create_engine
 import os
 
-# Obtener la URL de la base de datos desde las variables de entorno
-DATABASE_URL = os.getenv('DATABASE_URL')
+# Definir la ruta del archivo CSV
+DATA_PATH = "data/combined_data.csv"
 
-# Crear un motor SQLAlchemy
-engine = create_engine(DATABASE_URL)
-
+# Cargar los datos desde el CSV en lugar de la base de datos
 try:
-    # Usar INNER JOIN en SQL para evitar merge en Pandas
-    query = """
-    SELECT 
-        b.*, 
-        r.*
-    FROM biogrid_homosapiens AS b
-    INNER JOIN rcsb_pdb AS r
-    ON LOWER(TRIM(b.official_symbol)) = LOWER(TRIM(r.macromolecule_name))
-    """
-    
-    # Cargar datos por lotes para evitar consumir demasiada memoria RAM
-    data_generator = pd.read_sql_query(query, engine, chunksize=5000)
-    combined_data = pd.concat(data_generator, ignore_index=True)
-    
-    print(f"Datos combinados exitosamente: {len(combined_data)} registros.")
-
+    print("Cargando datos combinados desde archivo local...")
+    combined_data = pd.read_csv(DATA_PATH)
+    print(f"Archivo cargado con {len(combined_data)} registros.")
 except Exception as e:
-    print(f"Error al cargar los datos: {e}")
+    print(f"Error al cargar el archivo de datos: {e}")
     combined_data = None
 
 # Inicializar la app de Dash
@@ -39,16 +23,13 @@ server = app.server  # Exponer el servidor Flask
 app.layout = html.Div([
     html.H1("Comparative Analysis Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
 
-    # Navegación por registros
     html.Div([
         html.Button("Previous", id='prev-button', n_clicks=0),
         html.Button("Next", id='next-button', n_clicks=0),
         html.Div(id='record-index', style={'marginTop': '10px'}),
     ], style={'textAlign': 'center', 'marginBottom': '20px'}),
 
-    # Contenedor principal con dos columnas
     html.Div([
-        # Columna Izquierda: Información de BIOGRID y RCSB
         html.Div([
             html.H3("BIOGRID Data"),
             html.Pre(id='biogrid-details', style={'border': '1px solid black', 'padding': '10px'}),
@@ -56,7 +37,6 @@ app.layout = html.Div([
             html.Pre(id='rcsb-details', style={'border': '1px solid black', 'padding': '10px'}),
         ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
 
-        # Columna Derecha: Gráficos Comparativos
         html.Div([
             html.H3("Comparison Graphs"),
             dcc.Graph(id='comparison-plot-1'),
@@ -89,10 +69,9 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
 
     current_record = combined_data.iloc[new_index]
 
-    biogrid_details = "\n".join([f"{col}: {current_record.get(col, 'N/A')}" for col in combined_data.columns if col.startswith("b_")])
-    rcsb_details = "\n".join([f"{col}: {current_record.get(col, 'N/A')}" for col in combined_data.columns if col.startswith("r_")])
+    biogrid_details = f"Official Symbol: {current_record['official_symbol']}\nUnique ID: {current_record['unique_id']}"
+    rcsb_details = f"Entry ID: {current_record['entry_id']}\nMacromolecule: {current_record['ligand_name']}"
 
-    # Gráfico 1: pH vs Percent Solvent Content
     fig1 = go.Figure()
     fig1.add_trace(go.Scatter(
         x=combined_data["percent_solvent_content"], 
@@ -110,7 +89,6 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     ))
     fig1.update_layout(title='Percent Solvent Content vs pH', xaxis_title='Percent Solvent Content', yaxis_title='pH')
 
-    # Gráfico 2: Temperature (K) vs Molecular Weight
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(
         x=combined_data["temp_k"], 
@@ -134,4 +112,5 @@ server = app.server
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
+
 
