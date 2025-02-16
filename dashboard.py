@@ -12,8 +12,8 @@ engine = create_engine(DATABASE_URL)
 
 try:
     # Usar el motor SQLAlchemy con pandas
-    biogrid_data = pd.read_sql_query("SELECT * FROM biogrid_homosapiens", engine) LIMIT 100,
-    rcsb_data = pd.read_sql_query("SELECT * FROM rcsb_pdb", engine) LIMIT 100,
+    biogrid_data = pd.read_sql_query("SELECT * FROM biogrid_homosapiens LIMIT 100", engine)
+    rcsb_data = pd.read_sql_query("SELECT * FROM rcsb_pdb LIMIT 100", engine)
     print("Datos cargados exitosamente.")
 except Exception as e:
     print(f"Error al cargar los datos: {e}")
