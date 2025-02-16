@@ -132,71 +132,60 @@ app.layout = html.Div([
     [State('record-index', 'children')]
 )
 def update_dashboard(prev_clicks, next_clicks, current_index):
-    # Determine the current index
-    if current_index is None:
+    """Actualiza el dashboard al navegar entre registros."""
+    
+    # Si no hay índice actual, empieza en 0
+    if current_index is None or not isinstance(current_index, str):
         current_index = 0
     else:
-        current_index = int(current_index.split(": ")[1])
+        try:
+            current_index = int(current_index.split(": ")[1])
+        except ValueError:
+            current_index = 0
 
-    # Adjust the index based on button clicks
-    new_index = current_index + (1 if next_clicks > prev_clicks else -1)
-    new_index = max(0, min(TOTAL_RECORDS - 1, new_index))
+    # Ajustar el índice sin `combined_data`
+    new_index = max(0, min(TOTAL_RECORDS - 1, current_index + (1 if next_clicks > prev_clicks else -1)))
 
+    # Obtener el registro actual con paginación SQL
+    record = fetch_record(new_index)
+    if record.empty:
+        return f"Current index: {new_index}", "No data available", "No data available", {}, {}
 
-    # Get the current record
-    current_record = combined_data.iloc[new_index]
+    # BIOGRID Details
+    biogrid_details = "\n".join([f"{col}: {record.iloc[0][col]}" for col in record.columns if "biogrid" in col])
 
-    # BIOGRID details: show all columns
-    biogrid_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" for col in biogrid_data.columns
-    ])
-
-    # RCSB details: show all columns with special handling for long rows
+    # RCSB Details
     rcsb_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" if col not in ['crystal_growth_procedure', 'structure_title']
-        else f"{col}: {current_record[col][:100]}..."  # Limit long rows to 100 characters
-        for col in rcsb_data.columns
+        f"{col}: {record.iloc[0][col]}" if len(str(record.iloc[0][col])) < 100 else f"{col}: {str(record.iloc[0][col])[:100]}..."
+        for col in record.columns if "rcsb" in col
     ])
 
-    # Dynamic Graphs with context and highlighted point
+    # Gráfico 1: Relación entre `percent_solvent_content` y `ph`
     comparison_plot_1 = {
         'data': [
-            {'x': rcsb_data["percent_solvent_content"],
-             'y': rcsb_data["ph"],
-             'mode': 'markers',
-             'marker': {'color': 'lightblue', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["percent_solvent_content"]],
-             'y': [current_record["ph"]],
-             'mode': 'markers',
-             'marker': {'color': 'blue', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
+            go.Scattergl(
+                x=[record.iloc[0].get("percent_solvent_content", 0)],
+                y=[record.iloc[0].get("ph", 0)],
+                mode='markers',
+                marker={'color': 'blue', 'size': 12, 'symbol': 'star'},
+                name='Selected Record'
+            )
         ],
-        'layout': {
-            'title': 'Percent Solvent Content vs pH',
-            'xaxis': {'title': 'Percent Solvent Content'},
-            'yaxis': {'title': 'pH'}
-        }
+        'layout': {'title': 'Percent Solvent Content vs pH', 'xaxis': {'title': 'Percent Solvent Content'}, 'yaxis': {'title': 'pH'}}
     }
 
+    # Gráfico 2: Relación entre `temp_k` y `molecular_weight`
     comparison_plot_2 = {
         'data': [
-            {'x': rcsb_data["temp_k"],
-             'y': rcsb_data["molecular_weight"],
-             'mode': 'markers',
-             'marker': {'color': 'lightgreen', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["temp_k"]],
-             'y': [current_record["molecular_weight"]],
-             'mode': 'markers',
-             'marker': {'color': 'green', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
+            go.Scattergl(
+                x=[record.iloc[0].get("temp_k", 0)],
+                y=[record.iloc[0].get("molecular_weight", 0)],
+                mode='markers',
+                marker={'color': 'green', 'size': 12, 'symbol': 'star'},
+                name='Selected Record'
+            )
         ],
-        'layout': {
-            'title': 'Temperature (K) vs Molecular Weight',
-            'xaxis': {'title': 'Temp (K)'},
-            'yaxis': {'title': 'Molecular Weight'}
-        }
+        'layout': {'title': 'Temperature (K) vs Molecular Weight', 'xaxis': {'title': 'Temp (K)'}, 'yaxis': {'title': 'Molecular Weight'}}
     }
 
     return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
