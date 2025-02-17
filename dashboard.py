@@ -3,8 +3,6 @@ from dash import dcc, html, Input, Output, State
 import polars as pl
 import plotly.graph_objs as go
 import os
-
-import os
 import urllib.request
 
 DATA_DIR = "data"
@@ -21,16 +19,13 @@ if not os.path.exists(COMBINED_DATA_PATH):
     urllib.request.urlretrieve(github_url, COMBINED_DATA_PATH)
     print("Archivo descargado exitosamente.")
 
-
-# Definir ruta del archivo combinado en la carpeta data/
-COMBINED_DATA_PATH = "data/combined_data.csv"
-
 # Cargar los datos combinados desde el archivo preprocesado
 try:
     print("Cargando datos combinados desde archivo local...")
     combined_data = pl.read_csv(COMBINED_DATA_PATH)
-    print(f"Archivo combinado cargado con {len(combined_data)} registros.")
-
+    print(f"Archivo combinado cargado con {len(combined_data)} registros y {len(combined_data.columns)} columnas.")
+    print("Muestra de datos:")
+    print(combined_data.head())
 except Exception as e:
     print(f"Error al cargar el archivo combinado: {e}")
     combined_data = None
@@ -102,6 +97,16 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     new_index = max(0, min(len(combined_data) - 1, new_index))
 
     current_record = combined_data.iloc[new_index]
+    
+    # Depuración: Mostrar nombres de las columnas disponibles
+    print("Columnas disponibles en combined_data:", combined_data.columns.tolist())
+    
+    # Verificar nombres de columnas antes de acceder
+    required_columns = ["official_symbol", "unique_id_x", "entry_id", "macromolecule_name"]
+    missing_columns = [col for col in required_columns if col not in combined_data.columns]
+    if missing_columns:
+        print(f"Advertencia: Faltan las siguientes columnas en combined_data: {missing_columns}")
+        return "Column mismatch", "Missing BIOGRID data", "Missing RCSB data", {}, {}
 
     biogrid_details = f"Official Symbol: {current_record['official_symbol']}\nUnique ID: {current_record['unique_id_x']}"
     rcsb_details = f"Entry ID: {current_record['entry_id']}\nMacromolecule: {current_record['macromolecule_name']}"
