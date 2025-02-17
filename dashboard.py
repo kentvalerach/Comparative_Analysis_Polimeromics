@@ -32,7 +32,11 @@ else:
 # Cargar los datos combinados desde el archivo preprocesado
 try:
     print("Cargando datos combinados desde archivo local...")
-    combined_data = pl.read_csv(COMBINED_DATA_PATH)
+    combined_data = pl.read_csv(
+        COMBINED_DATA_PATH, 
+        dtypes={"identifier_id": str},  # Forzar la columna identifier_id como string
+        ignore_errors=True  # Ignorar errores de conversión
+    )
     print(f"Archivo combinado cargado con {len(combined_data)} registros y {len(combined_data.columns)} columnas.")
     print("Muestra de datos:")
     print(combined_data.head())
