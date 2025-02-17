@@ -1,41 +1,48 @@
 import dash
 from dash import dcc, html, Input, Output, State
-import pandas as pd
+import polars as pl
 import plotly.graph_objs as go
-from sqlalchemy import create_engine
 import os
 
-# Obtener la URL de la base de datos desde las variables de entorno
-DATABASE_URL = os.getenv('DATABASE_URL')
+# Definir rutas de los archivos en la carpeta data/
+BIOGRID_PATH = "data/biogrid_homosapiens.csv"
+RCSB_PATH = "data/rcsb_pdb.csv"
 
-# Crear un motor SQLAlchemy
-engine = create_engine(DATABASE_URL)
-
+# Cargar los datos desde los archivos en lugar de la base de datos
 try:
-    # Usar INNER JOIN en SQL para evitar merge en Pandas
-    query = """
-    SELECT 
-        b.*, 
-        r.*
-    FROM biogrid_homosapiens AS b
-    INNER JOIN rcsb_pdb AS r
-    ON LOWER(TRIM(b.official_symbol)) = LOWER(TRIM(r.macromolecule_name))
-    """
-    
-    # Cargar datos por lotes para evitar consumir demasiada memoria RAM
-    data_generator = pd.read_sql_query(query, engine, chunksize=5000)
-    combined_data = pd.concat(data_generator, ignore_index=True)
-    
-    print(f"Datos combinados exitosamente: {len(combined_data)} registros.")
+    print("Cargando datos desde archivos locales...")
+
+    # Leer los archivos CSV con Polars
+    biogrid_data = pl.read_csv(BIOGRID_PATH)
+    rcsb_data = pl.read_csv(RCSB_PATH)
+
+    print("Datos cargados exitosamente. Realizando JOIN...")
+
+    # Normalizar claves para evitar problemas de espacios y mayúsculas
+    biogrid_data = biogrid_data.with_columns(
+        pl.col("official_symbol").str.to_lowercase().str.strip()
+    )
+    rcsb_data = rcsb_data.with_columns(
+        pl.col("macromolecule_name").str.to_lowercase().str.strip()
+    )
+
+    # Realizar el merge (INNER JOIN) en Polars
+    combined_data = biogrid_data.join(
+        rcsb_data, 
+        left_on="official_symbol", 
+        right_on="macromolecule_name", 
+        how="inner"
+    )
+
+    print(f"JOIN completado. Registros combinados: {len(combined_data)}")
 
 except Exception as e:
-    print(f"Error al cargar los datos: {e}")
+    print(f"Error al cargar y combinar los datos: {e}")
     combined_data = None
 
 # Initialize Dash app
 app = dash.Dash(__name__)
 server = app.server  # Exponer el servidor Flask
-
 
 app.layout = html.Div([
     html.H1("Comparative Analysis Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
@@ -100,89 +107,7 @@ app.layout = html.Div([
     ], style={'display': 'flex', 'justifyContent': 'space-between'}),
 ])
 
-@app.callback(
-    [Output('record-index', 'children'),
-     Output('biogrid-details', 'children'),
-     Output('rcsb-details', 'children'),
-     Output('comparison-plot-1', 'figure'),
-     Output('comparison-plot-2', 'figure')],
-    [Input('prev-button', 'n_clicks'),
-     Input('next-button', 'n_clicks')],
-    [State('record-index', 'children')]
-)
-def update_dashboard(prev_clicks, next_clicks, current_index):
-    # Determine the current index
-    if current_index is None:
-        current_index = 0
-    else:
-        current_index = int(current_index.split(": ")[1])
-
-    # Adjust the index based on button clicks
-    new_index = current_index + (1 if next_clicks > prev_clicks else -1)
-    new_index = max(0, min(len(combined_data) - 1, new_index))
-
-    # Get the current record
-    current_record = combined_data.iloc[new_index]
-
-    # BIOGRID details: show all columns
-    biogrid_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" for col in biogrid_data.columns
-    ])
-
-    # RCSB details: show all columns with special handling for long rows
-    rcsb_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" if col not in ['crystal_growth_procedure', 'structure_title']
-        else f"{col}: {current_record[col][:100]}..."  # Limit long rows to 100 characters
-        for col in rcsb_data.columns
-    ])
-
-    # Dynamic Graphs with context and highlighted point
-    comparison_plot_1 = {
-        'data': [
-            {'x': rcsb_data["percent_solvent_content"],
-             'y': rcsb_data["ph"],
-             'mode': 'markers',
-             'marker': {'color': 'lightblue', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["percent_solvent_content"]],
-             'y': [current_record["ph"]],
-             'mode': 'markers',
-             'marker': {'color': 'blue', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
-        ],
-        'layout': {
-            'title': 'Percent Solvent Content vs pH',
-            'xaxis': {'title': 'Percent Solvent Content'},
-            'yaxis': {'title': 'pH'}
-        }
-    }
-
-    comparison_plot_2 = {
-        'data': [
-            {'x': rcsb_data["temp_k"],
-             'y': rcsb_data["molecular_weight"],
-             'mode': 'markers',
-             'marker': {'color': 'lightgreen', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["temp_k"]],
-             'y': [current_record["molecular_weight"]],
-             'mode': 'markers',
-             'marker': {'color': 'green', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
-        ],
-        'layout': {
-            'title': 'Temperature (K) vs Molecular Weight',
-            'xaxis': {'title': 'Temp (K)'},
-            'yaxis': {'title': 'Molecular Weight'}
-        }
-    }
-
-    return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
-
-# Run the app
-
 server = app.server
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
