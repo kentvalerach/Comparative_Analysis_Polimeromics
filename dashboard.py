@@ -43,6 +43,8 @@ try:
     combined_data = combined_data.sample(fraction=0.1, seed=42)
 
     print(f"JOIN completado. Registros combinados: {len(combined_data)}")
+    print(combined_data.head(5))  # Muestra las primeras 5 filas del dataset combinado
+
 
 except Exception as e:
     print(f"Error al cargar y combinar los datos: {e}")
