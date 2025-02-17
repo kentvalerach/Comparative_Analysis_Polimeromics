@@ -22,10 +22,6 @@ if not os.path.exists(COMBINED_DATA_PATH):
 # Verificar si el archivo realmente existe y mostrar su contenido
 if os.path.exists(COMBINED_DATA_PATH):
     print(f"✅ Archivo encontrado: {COMBINED_DATA_PATH}")
-    with open(COMBINED_DATA_PATH, 'r', encoding='utf-8') as file:
-        print("🔍 Primeras 5 líneas del archivo:")
-        for _ in range(5):
-            print(file.readline().strip())
 else:
     print("❌ Error: El archivo no fue encontrado en la carpeta data/")
 
@@ -47,10 +43,10 @@ try:
     rename_mapping = {
         "symbol": "official_symbol",
         "unique_i": "unique_id_x",
-        "entry": "entry_id",
+        "entry_id": "entry_id",
         "macromolecule": "macromolecule_name"
     }
-    combined_data = combined_data.rename(columns={k: v for k, v in rename_mapping.items() if k in combined_data.columns})
+    combined_data.rename(columns={k: v for k, v in rename_mapping.items() if k in combined_data.columns}, inplace=True)
     print("Columnas después de renombrar:", combined_data.columns.tolist())
 
 except Exception as e:
@@ -110,22 +106,22 @@ app.layout = html.Div([
 )
 def update_dashboard(prev_clicks, next_clicks, current_index):
     if combined_data is None or combined_data.empty:
-        return "No data available", "No BIOGRID data", "No RCSB data", {}, {}
+        return "No data available", "No BIOGRID data", "No RCSB data", go.Figure(), go.Figure()
 
-    if current_index is None:
+    if current_index is None or isinstance(current_index, str):
         current_index = 0
     else:
-        current_index = int(current_index.split(": ")[1])
+        current_index = int(current_index.split(": ")[-1])
 
     new_index = current_index + (1 if next_clicks > prev_clicks else -1)
     new_index = max(0, min(len(combined_data) - 1, new_index))
 
     current_record = combined_data.iloc[new_index]
     
-    biogrid_details = f"Official Symbol: {current_record['official_symbol']}\nUnique ID: {current_record['unique_id_x']}"
-    rcsb_details = f"Entry ID: {current_record['entry_id']}\nMacromolecule: {current_record['macromolecule_name']}"
-
-    return f"Current index: {new_index}", biogrid_details, rcsb_details, {}, {}
+    biogrid_details = f"Official Symbol: {current_record.get('official_symbol', 'N/A')}\nUnique ID: {current_record.get('unique_id_x', 'N/A')}"
+    rcsb_details = f"Entry ID: {current_record.get('entry_id', 'N/A')}\nMacromolecule: {current_record.get('macromolecule_name', 'N/A')}"
+    
+    return f"Current index: {new_index}", biogrid_details, rcsb_details, go.Figure(), go.Figure()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
