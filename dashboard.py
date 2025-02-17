@@ -30,6 +30,7 @@ else:
     print("❌ Error: El archivo no fue encontrado en la carpeta data/")
 
 # Cargar los datos combinados desde el archivo preprocesado
+combined_data = None
 try:
     print("Cargando datos combinados desde archivo local...")
     combined_data = pl.read_csv(
@@ -40,14 +41,12 @@ try:
     print(f"Archivo combinado cargado con {len(combined_data)} registros y {len(combined_data.columns)} columnas.")
     print("Muestra de datos:")
     print(combined_data.head())
+    combined_data = combined_data.to_pandas()
 except Exception as e:
     print(f"Error al cargar el archivo combinado: {e}")
     combined_data = None
 
-# Convertir el dataframe de Polars a Pandas si tiene datos
-if combined_data is not None and len(combined_data) > 0:
-    combined_data = combined_data.to_pandas()
-else:
+if combined_data is None or combined_data.empty:
     print("⚠️ Advertencia: El dataframe combinado está vacío. Revisa el archivo en la carpeta data.")
 
 # Initialize Dash app
@@ -126,8 +125,6 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     rcsb_details = f"Entry ID: {current_record['entry_id']}\nMacromolecule: {current_record['macromolecule_name']}"
 
     return f"Current index: {new_index}", biogrid_details, rcsb_details, {}, {}
-
-server = app.server
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
