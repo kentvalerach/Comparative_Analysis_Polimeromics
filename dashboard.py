@@ -4,6 +4,24 @@ import polars as pl
 import plotly.graph_objs as go
 import os
 
+import os
+import urllib.request
+
+DATA_DIR = "data"
+COMBINED_DATA_PATH = os.path.join(DATA_DIR, "combined_data.csv")
+
+# Crear la carpeta 'data' si no existe
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+
+# Verificar si el archivo no está en Railway y descargarlo desde GitHub
+if not os.path.exists(COMBINED_DATA_PATH):
+    github_url = "https://raw.githubusercontent.com/kentvalerach/Comparative_Analysis_Polimeromics/main/data/combined_data.csv"
+    print(f"Descargando datos desde {github_url}...")
+    urllib.request.urlretrieve(github_url, COMBINED_DATA_PATH)
+    print("Archivo descargado exitosamente.")
+
+
 # Definir ruta del archivo combinado en la carpeta data/
 COMBINED_DATA_PATH = "data/combined_data.csv"
 
@@ -94,8 +112,3 @@ server = app.server
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
-
-    
-
-
-
