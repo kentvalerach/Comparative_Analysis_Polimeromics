@@ -60,7 +60,6 @@ if combined_data is None or combined_data.empty:
 app = dash.Dash(__name__)
 server = app.server  # Exponer el servidor Flask
 
-
 app.layout = html.Div([
     html.H1("Comparative Analysis Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
     
@@ -91,35 +90,6 @@ app.layout = html.Div([
                 'overflowY': 'scroll',
                 'maxHeight': '300px'
             }),
-            html.Div([
-                html.H3("Biomedical and Genetic Insights"),
-                html.P("The data presented in this dashboard integrates molecular interaction information (BIOGRID) "
-                       "and structural details of macromolecules (RCSB PDB). This combination offers valuable insights "
-                       "into the genetic and biochemical mechanisms underlying human physiology and disease."),
-                html.P("Potential biomedical applications include:"),
-                html.Ul([
-                    html.Li("**Drug Discovery**: Identifying potential drug targets by analyzing protein structures and "
-                            "their interaction patterns."),
-                    html.Li("**Gene Function Analysis**: Elucidating the functional roles of genes and proteins in "
-                            "biological pathways by studying interaction networks."),
-                    html.Li("**Precision Medicine**: Supporting personalized therapeutic approaches by linking structural "
-                            "variations to specific genetic markers.")
-                ]),
-                html.P("A unique aspect of this analysis is the integration of two comprehensive datasets—BIOGRID and RCSB PDB—which allows "
-                       "for predictive modeling. The presence of an objective variable, **HIT**, provides a foundation for "
-                       "machine learning approaches to predict key biological interactions. Additionally, the inclusion of "
-                       "structural and functional information on macromolecules like **Notum** and **Furin** enhances the ability "
-                       "to explore critical biochemical pathways."),
-                html.P("This data-driven approach empowers researchers to uncover novel therapeutic strategies and "
-                       "enhance our understanding of human biology at a molecular level by linking genetic insights with macromolecular data." 
-                       "You can access the Python script in the repository https://github.com/kentvalerach/Polimeromic")
-            ], style={
-                'marginTop': '20px',
-                'padding': '10px',
-                'border': '1px solid black',
-                'backgroundColor': '#f9f9f9',
-                'lineHeight': '1.6'
-            }),
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'}),
     ], style={'display': 'flex', 'justifyContent': 'space-between'}),
 ])
@@ -135,77 +105,36 @@ app.layout = html.Div([
     [State('record-index', 'children')]
 )
 def update_dashboard(prev_clicks, next_clicks, current_index):
-    # Determine the current index
-    if current_index is None:
+    if combined_data is None or combined_data.empty:
+        print("❌ No hay datos disponibles en el DataFrame")
+        return "No data available", "No BIOGRID data", "No RCSB data", go.Figure(), go.Figure()
+
+    if current_index is None or isinstance(current_index, str):
         current_index = 0
     else:
-        current_index = int(current_index.split(": ")[1])
+        try:
+            current_index = int(current_index.split(": ")[-1])
+        except ValueError:
+            current_index = 0
 
-    # Adjust the index based on button clicks
     new_index = current_index + (1 if next_clicks > prev_clicks else -1)
     new_index = max(0, min(len(combined_data) - 1, new_index))
 
-    # Get the current record
     current_record = combined_data.iloc[new_index]
 
-    # BIOGRID details: show all columns
-    biogrid_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" for col in biogrid_data.columns
-    ])
+    # Depuración: Mostrar el registro actual
+    print("Registro actual:", current_record.to_dict())
 
-    # RCSB details: show all columns with special handling for long rows
-    rcsb_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" if col not in ['crystal_growth_procedure', 'structure_title']
-        else f"{col}: {current_record[col][:100]}..."  # Limit long rows to 100 characters
-        for col in rcsb_data.columns
-    ])
+    # Manejo seguro de acceso a columnas
+    biogrid_symbol = current_record['official_symbol'] if 'official_symbol' in current_record else 'N/A'
+    biogrid_id = current_record['unique_id_x'] if 'unique_id_x' in current_record else 'N/A'
+    rcsb_entry = current_record['entry_id'] if 'entry_id' in current_record else 'N/A'
+    rcsb_macro = current_record['macromolecule_name'] if 'macromolecule_name' in current_record else 'N/A'
 
-    # Dynamic Graphs with context and highlighted point
-    comparison_plot_1 = {
-        'data': [
-            {'x': rcsb_data["percent_solvent_content"],
-             'y': rcsb_data["ph"],
-             'mode': 'markers',
-             'marker': {'color': 'lightblue', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["percent_solvent_content"]],
-             'y': [current_record["ph"]],
-             'mode': 'markers',
-             'marker': {'color': 'blue', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
-        ],
-        'layout': {
-            'title': 'Percent Solvent Content vs pH',
-            'xaxis': {'title': 'Percent Solvent Content'},
-            'yaxis': {'title': 'pH'}
-        }
-    }
+    biogrid_details = f"Official Symbol: {biogrid_symbol}\nUnique ID: {biogrid_id}"
+    rcsb_details = f"Entry ID: {rcsb_entry}\nMacromolecule: {rcsb_macro}"
 
-    comparison_plot_2 = {
-        'data': [
-            {'x': rcsb_data["temp_k"],
-             'y': rcsb_data["molecular_weight"],
-             'mode': 'markers',
-             'marker': {'color': 'lightgreen', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["temp_k"]],
-             'y': [current_record["molecular_weight"]],
-             'mode': 'markers',
-             'marker': {'color': 'green', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
-        ],
-        'layout': {
-            'title': 'Temperature (K) vs Molecular Weight',
-            'xaxis': {'title': 'Temp (K)'},
-            'yaxis': {'title': 'Molecular Weight'}
-        }
-    }
-
-    return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
-
-# Run the app
-
-server = app.server
+    return f"Current index: {new_index}", biogrid_details, rcsb_details, go.Figure(), go.Figure()
 
 
 if __name__ == '__main__':
