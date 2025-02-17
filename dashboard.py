@@ -16,8 +16,17 @@ try:
     biogrid_data = pl.read_csv(BIOGRID_PATH)
     rcsb_data = pl.read_csv(RCSB_PATH)
 
-    print("Datos cargados exitosamente. Realizando JOIN...")
+    print(f"BIOGRID Data: {len(biogrid_data)} registros cargados.")
+    print(f"RCSB Data: {len(rcsb_data)} registros cargados.")
 
+    # Ver primeras filas de los datasets para depuración
+    print("BIOGRID Data Sample:")
+    print(biogrid_data.head())
+    print("RCSB Data Sample:")
+    print(rcsb_data.head())
+
+    print("Normalizando claves...")
+    
     # Normalizar claves para evitar problemas de espacios y mayúsculas
     biogrid_data = biogrid_data.with_columns(
         pl.col("official_symbol").str.to_lowercase().str.strip()
@@ -25,6 +34,8 @@ try:
     rcsb_data = rcsb_data.with_columns(
         pl.col("macromolecule_name").str.to_lowercase().str.strip()
     )
+
+    print("Realizando JOIN...")
 
     # Realizar el merge (INNER JOIN) en Polars
     combined_data = biogrid_data.join(
@@ -35,14 +46,20 @@ try:
     )
 
     print(f"JOIN completado. Registros combinados: {len(combined_data)}")
+    
+    # Verificar contenido de los datos combinados
+    print("Combined Data Sample:")
+    print(combined_data.head())
 
 except Exception as e:
     print(f"Error al cargar y combinar los datos: {e}")
     combined_data = None
 
-# Convertir el dataframe de Polars a un diccionario para Dash
-if combined_data is not None:
+# Convertir el dataframe de Polars a Pandas si tiene datos
+if combined_data is not None and len(combined_data) > 0:
     combined_data = combined_data.to_pandas()
+else:
+    print("Advertencia: El dataframe combinado está vacío. Revisa los datos de entrada y las claves de combinación.")
 
 # Initialize Dash app
 app = dash.Dash(__name__)
