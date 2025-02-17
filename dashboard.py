@@ -46,7 +46,6 @@ except Exception as e:
 app = dash.Dash(__name__)
 server = app.server  # Exponer el servidor Flask
 
-
 app.layout = html.Div([
     html.H1("Comparative Analysis Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
     
@@ -110,89 +109,7 @@ app.layout = html.Div([
     ], style={'display': 'flex', 'justifyContent': 'space-between'}),
 ])
 
-@app.callback(
-    [Output('record-index', 'children'),
-     Output('biogrid-details', 'children'),
-     Output('rcsb-details', 'children'),
-     Output('comparison-plot-1', 'figure'),
-     Output('comparison-plot-2', 'figure')],
-    [Input('prev-button', 'n_clicks'),
-     Input('next-button', 'n_clicks')],
-    [State('record-index', 'children')]
-)
-def update_dashboard(prev_clicks, next_clicks, current_index):
-    # Determine the current index
-    if current_index is None:
-        current_index = 0
-    else:
-        current_index = int(current_index.split(": ")[1])
-
-    # Adjust the index based on button clicks
-    new_index = current_index + (1 if next_clicks > prev_clicks else -1)
-    new_index = max(0, min(len(combined_data) - 1, new_index))
-
-    # Get the current record
-    current_record = combined_data.iloc[new_index]
-
-    # BIOGRID details: show all columns
-    biogrid_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" for col in biogrid_data.columns
-    ])
-
-    # RCSB details: show all columns with special handling for long rows
-    rcsb_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" if col not in ['crystal_growth_procedure', 'structure_title']
-        else f"{col}: {current_record[col][:100]}..."  # Limit long rows to 100 characters
-        for col in rcsb_data.columns
-    ])
-
-    # Dynamic Graphs with context and highlighted point
-    comparison_plot_1 = {
-        'data': [
-            {'x': rcsb_data["percent_solvent_content"],
-             'y': rcsb_data["ph"],
-             'mode': 'markers',
-             'marker': {'color': 'lightblue', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["percent_solvent_content"]],
-             'y': [current_record["ph"]],
-             'mode': 'markers',
-             'marker': {'color': 'blue', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
-        ],
-        'layout': {
-            'title': 'Percent Solvent Content vs pH',
-            'xaxis': {'title': 'Percent Solvent Content'},
-            'yaxis': {'title': 'pH'}
-        }
-    }
-
-    comparison_plot_2 = {
-        'data': [
-            {'x': rcsb_data["temp_k"],
-             'y': rcsb_data["molecular_weight"],
-             'mode': 'markers',
-             'marker': {'color': 'lightgreen', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["temp_k"]],
-             'y': [current_record["molecular_weight"]],
-             'mode': 'markers',
-             'marker': {'color': 'green', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
-        ],
-        'layout': {
-            'title': 'Temperature (K) vs Molecular Weight',
-            'xaxis': {'title': 'Temp (K)'},
-            'yaxis': {'title': 'Molecular Weight'}
-        }
-    }
-
-    return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
-
-# Run the app
-
 server = app.server
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
