@@ -106,22 +106,36 @@ app.layout = html.Div([
 )
 def update_dashboard(prev_clicks, next_clicks, current_index):
     if combined_data is None or combined_data.empty:
+        print("❌ No hay datos disponibles en el DataFrame")
         return "No data available", "No BIOGRID data", "No RCSB data", go.Figure(), go.Figure()
 
     if current_index is None or isinstance(current_index, str):
         current_index = 0
     else:
-        current_index = int(current_index.split(": ")[-1])
+        try:
+            current_index = int(current_index.split(": ")[-1])
+        except ValueError:
+            current_index = 0
 
     new_index = current_index + (1 if next_clicks > prev_clicks else -1)
     new_index = max(0, min(len(combined_data) - 1, new_index))
 
     current_record = combined_data.iloc[new_index]
-    
-    biogrid_details = f"Official Symbol: {current_record.get('official_symbol', 'N/A')}\nUnique ID: {current_record.get('unique_id_x', 'N/A')}"
-    rcsb_details = f"Entry ID: {current_record.get('entry_id', 'N/A')}\nMacromolecule: {current_record.get('macromolecule_name', 'N/A')}"
-    
+
+    # Depuración: Mostrar el registro actual
+    print("Registro actual:", current_record.to_dict())
+
+    # Manejo seguro de acceso a columnas
+    biogrid_symbol = current_record['official_symbol'] if 'official_symbol' in current_record else 'N/A'
+    biogrid_id = current_record['unique_id_x'] if 'unique_id_x' in current_record else 'N/A'
+    rcsb_entry = current_record['entry_id'] if 'entry_id' in current_record else 'N/A'
+    rcsb_macro = current_record['macromolecule_name'] if 'macromolecule_name' in current_record else 'N/A'
+
+    biogrid_details = f"Official Symbol: {biogrid_symbol}\nUnique ID: {biogrid_id}"
+    rcsb_details = f"Entry ID: {rcsb_entry}\nMacromolecule: {rcsb_macro}"
+
     return f"Current index: {new_index}", biogrid_details, rcsb_details, go.Figure(), go.Figure()
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
