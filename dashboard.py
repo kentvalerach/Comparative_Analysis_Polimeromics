@@ -120,6 +120,90 @@ app.layout = html.Div([
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'}),
     ], style={'display': 'flex', 'justifyContent': 'space-between'}),
 ])
+@app.callback(
+    [Output('record-index', 'children'),
+     Output('biogrid-details', 'children'),
+     Output('rcsb-details', 'children'),
+     Output('comparison-plot-1', 'figure'),
+     Output('comparison-plot-2', 'figure')],
+    [Input('prev-button', 'n_clicks'),
+     Input('next-button', 'n_clicks')],
+    [State('record-index', 'children')]
+)
+def update_dashboard(prev_clicks, next_clicks, current_index):
+    global combined_data  # Asegurar acceso a la variable global
+
+    if combined_data is None or len(combined_data) == 0:
+        return "No data available", "", "", {}, {}
+
+    # Convertir a Pandas antes de usar .iloc
+    combined_data_pd = combined_data.to_pandas()
+
+    # Determinar el índice actual
+    if current_index is None:
+        current_index = 0
+    else:
+        current_index = int(current_index.split(": ")[1])
+
+    # Ajustar el índice basado en los botones
+    new_index = current_index + (1 if next_clicks > prev_clicks else -1)
+    new_index = max(0, min(len(combined_data_pd) - 1, new_index))
+
+    # Obtener el registro actual
+    current_record = combined_data_pd.iloc[new_index]
+
+    # BIOGRID details: mostrar todas las columnas
+    biogrid_details = "\n".join([
+        f"{col}: {current_record.get(col, 'N/A')}" for col in biogrid_data.columns
+    ])
+
+    # RCSB details: mostrar todas las columnas
+    rcsb_details = "\n".join([
+        f"{col}: {current_record.get(col, 'N/A')}" for col in rcsb_data.columns
+    ])
+
+    # Gráficos dinámicos con contexto y punto resaltado
+    comparison_plot_1 = {
+        'data': [
+            {'x': combined_data_pd["percent_solvent_content"],
+             'y': combined_data_pd["ph"],
+             'mode': 'markers',
+             'marker': {'color': 'lightblue', 'size': 8},
+             'name': 'All Records'},
+            {'x': [current_record["percent_solvent_content"]],
+             'y': [current_record["ph"]],
+             'mode': 'markers',
+             'marker': {'color': 'blue', 'size': 12, 'symbol': 'star'},
+             'name': 'Selected Record'},
+        ],
+        'layout': {
+            'title': 'Percent Solvent Content vs pH',
+            'xaxis': {'title': 'Percent Solvent Content'},
+            'yaxis': {'title': 'pH'}
+        }
+    }
+
+    comparison_plot_2 = {
+        'data': [
+            {'x': combined_data_pd["temp_k"],
+             'y': combined_data_pd["molecular_weight"],
+             'mode': 'markers',
+             'marker': {'color': 'lightgreen', 'size': 8},
+             'name': 'All Records'},
+            {'x': [current_record["temp_k"]],
+             'y': [current_record["molecular_weight"]],
+             'mode': 'markers',
+             'marker': {'color': 'green', 'size': 12, 'symbol': 'star'},
+             'name': 'Selected Record'},
+        ],
+        'layout': {
+            'title': 'Temperature (K) vs Molecular Weight',
+            'xaxis': {'title': 'Temp (K)'},
+            'yaxis': {'title': 'Molecular Weight'}
+        }
+    }
+
+    return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
 
 server = app.server
 
