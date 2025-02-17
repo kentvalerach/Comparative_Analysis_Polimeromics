@@ -12,24 +12,27 @@ RCSB_PATH = "data/rcsb_pdb.csv"
 try:
     print("Cargando datos desde archivos locales...")
     
-    # Leer los archivos CSV con Polars con inferencia mejorada de tipos
+    # Leer los archivos CSV con Polars asegurando inferencia correcta de tipos
     biogrid_data = pl.read_csv(BIOGRID_PATH, infer_schema_length=10000)
-    rcsb_data = pl.read_csv(RCSB_PATH, infer_schema_length=10000, schema_overrides={"number_of_water_molecules": pl.Float64})
+    rcsb_data = pl.read_csv(RCSB_PATH, infer_schema_length=10000)
 
     print("Datos cargados exitosamente. Realizando JOIN...")
 
     # Normalizar claves para evitar problemas de espacios y mayúsculas
     biogrid_data = biogrid_data.with_columns(
-        biogrid_data["official_symbol"].str.strip_chars().str.to_lowercase()
+        pl.col("official_symbol").str.strip_chars().str.to_lowercase()
     )
     rcsb_data = rcsb_data.with_columns(
-        rcsb_data["macromolecule_name"].str.strip_chars().str.to_lowercase()
+        pl.col("macromolecule_name").str.strip_chars().str.to_lowercase()
     )
 
-    # Convertir la columna con problemas a float64 antes del JOIN
-    rcsb_data = rcsb_data.with_columns(
-        rcsb_data["number_of_water_molecules"].cast(pl.Float64, strict=False)
-    )
+    # Convertir columnas problemáticas a Float64 antes del JOIN para evitar errores
+    problematic_columns = ["number_of_water_molecules", "molecular_weight"]
+    for col in problematic_columns:
+        if col in rcsb_data.columns:
+            rcsb_data = rcsb_data.with_columns(
+                pl.col(col).cast(pl.Float64, strict=False)
+            )
 
     # Realizar el merge (INNER JOIN) en Polars
     combined_data = biogrid_data.join(
@@ -44,7 +47,6 @@ try:
 
     print(f"JOIN completado. Registros combinados: {len(combined_data)}")
     print(combined_data.head(5))  # Muestra las primeras 5 filas del dataset combinado
-
 
 except Exception as e:
     print(f"Error al cargar y combinar los datos: {e}")
