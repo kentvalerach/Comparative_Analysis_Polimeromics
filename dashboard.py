@@ -33,6 +33,8 @@ try:
         right_on="macromolecule_name", 
         how="inner"
     )
+    # Limitar la carga a solo el 10% de los datos después del JOIN
+    combined_data = combined_data.sample(frac=0.1, random_state=42)
 
     print(f"JOIN completado. Registros combinados: {len(combined_data)}")
 
