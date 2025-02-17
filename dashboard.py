@@ -19,6 +19,16 @@ if not os.path.exists(COMBINED_DATA_PATH):
     urllib.request.urlretrieve(github_url, COMBINED_DATA_PATH)
     print("Archivo descargado exitosamente.")
 
+# Verificar si el archivo realmente existe y mostrar su contenido
+if os.path.exists(COMBINED_DATA_PATH):
+    print(f"✅ Archivo encontrado: {COMBINED_DATA_PATH}")
+    with open(COMBINED_DATA_PATH, 'r', encoding='utf-8') as file:
+        print("🔍 Primeras 5 líneas del archivo:")
+        for _ in range(5):
+            print(file.readline().strip())
+else:
+    print("❌ Error: El archivo no fue encontrado en la carpeta data/")
+
 # Cargar los datos combinados desde el archivo preprocesado
 try:
     print("Cargando datos combinados desde archivo local...")
@@ -34,7 +44,7 @@ except Exception as e:
 if combined_data is not None and len(combined_data) > 0:
     combined_data = combined_data.to_pandas()
 else:
-    print("Advertencia: El dataframe combinado está vacío. Revisa el archivo en la carpeta data.")
+    print("⚠️ Advertencia: El dataframe combinado está vacío. Revisa el archivo en la carpeta data.")
 
 # Initialize Dash app
 app = dash.Dash(__name__)
