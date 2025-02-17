@@ -40,6 +40,10 @@ except Exception as e:
     print(f"Error al cargar y combinar los datos: {e}")
     combined_data = None
 
+# Convertir el dataframe de Polars a un diccionario para Dash
+if combined_data is not None:
+    combined_data = combined_data.to_pandas()
+
 # Initialize Dash app
 app = dash.Dash(__name__)
 server = app.server  # Exponer el servidor Flask
@@ -74,43 +78,44 @@ app.layout = html.Div([
                 'overflowY': 'scroll',
                 'maxHeight': '300px'
             }),
-            html.Div([
-                html.H3("Biomedical and Genetic Insights"),
-                html.P("The data presented in this dashboard integrates molecular interaction information (BIOGRID) "
-                       "and structural details of macromolecules (RCSB PDB). This combination offers valuable insights "
-                       "into the genetic and biochemical mechanisms underlying human physiology and disease."),
-                html.P("Potential biomedical applications include:"),
-                html.Ul([
-                    html.Li("**Drug Discovery**: Identifying potential drug targets by analyzing protein structures and "
-                            "their interaction patterns."),
-                    html.Li("**Gene Function Analysis**: Elucidating the functional roles of genes and proteins in "
-                            "biological pathways by studying interaction networks."),
-                    html.Li("**Precision Medicine**: Supporting personalized therapeutic approaches by linking structural "
-                            "variations to specific genetic markers.")
-                ]),
-                html.P("A unique aspect of this analysis is the integration of two comprehensive datasets—BIOGRID and RCSB PDB—which allows "
-                       "for predictive modeling. The presence of an objective variable, **HIT**, provides a foundation for "
-                       "machine learning approaches to predict key biological interactions. Additionally, the inclusion of "
-                       "structural and functional information on macromolecules like **Notum** and **Furin** enhances the ability "
-                       "to explore critical biochemical pathways."),
-                html.P("This data-driven approach empowers researchers to uncover novel therapeutic strategies and "
-                       "enhance our understanding of human biology at a molecular level by linking genetic insights with macromolecular data." 
-                       "You can access the Python script in the repository https://github.com/kentvalerach/Polimeromic")
-            ], style={
-                'marginTop': '20px',
-                'padding': '10px',
-                'border': '1px solid black',
-                'backgroundColor': '#f9f9f9',
-                'lineHeight': '1.6'
-            }),
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'}),
     ], style={'display': 'flex', 'justifyContent': 'space-between'}),
 ])
+
+@app.callback(
+    [Output('record-index', 'children'),
+     Output('biogrid-details', 'children'),
+     Output('rcsb-details', 'children'),
+     Output('comparison-plot-1', 'figure'),
+     Output('comparison-plot-2', 'figure')],
+    [Input('prev-button', 'n_clicks'),
+     Input('next-button', 'n_clicks')],
+    [State('record-index', 'children')]
+)
+def update_dashboard(prev_clicks, next_clicks, current_index):
+    if combined_data is None or combined_data.empty:
+        return "No data available", "No BIOGRID data", "No RCSB data", {}, {}
+
+    if current_index is None:
+        current_index = 0
+    else:
+        current_index = int(current_index.split(": ")[1])
+
+    new_index = current_index + (1 if next_clicks > prev_clicks else -1)
+    new_index = max(0, min(len(combined_data) - 1, new_index))
+
+    current_record = combined_data.iloc[new_index]
+
+    biogrid_details = f"Official Symbol: {current_record['official_symbol']}\nUnique ID: {current_record['unique_id_x']}"
+    rcsb_details = f"Entry ID: {current_record['entry_id']}\nMacromolecule: {current_record['macromolecule_name']}"
+
+    return f"Current index: {new_index}", biogrid_details, rcsb_details, {}, {}
 
 server = app.server
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
+
     
 
 
