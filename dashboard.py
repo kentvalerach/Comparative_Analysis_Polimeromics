@@ -4,62 +4,24 @@ import polars as pl
 import plotly.graph_objs as go
 import os
 
-# Definir rutas de los archivos en la carpeta data/
-BIOGRID_PATH = "data/biogrid_homosapiens.csv"
-RCSB_PATH = "data/rcsb_pdb.csv"
+# Definir ruta del archivo combinado en la carpeta data/
+COMBINED_DATA_PATH = "data/combined_data.csv"
 
-# Cargar los datos desde los archivos en lugar de la base de datos
+# Cargar los datos combinados desde el archivo preprocesado
 try:
-    print("Cargando datos desde archivos locales...")
-
-    # Leer los archivos CSV con Polars
-    biogrid_data = pl.read_csv(BIOGRID_PATH)
-    rcsb_data = pl.read_csv(RCSB_PATH)
-
-    print(f"BIOGRID Data: {len(biogrid_data)} registros cargados.")
-    print(f"RCSB Data: {len(rcsb_data)} registros cargados.")
-
-    # Ver primeras filas de los datasets para depuración
-    print("BIOGRID Data Sample:")
-    print(biogrid_data.head())
-    print("RCSB Data Sample:")
-    print(rcsb_data.head())
-
-    print("Normalizando claves...")
-    
-    # Normalizar claves para evitar problemas de espacios y mayúsculas
-    biogrid_data = biogrid_data.with_columns(
-        pl.col("official_symbol").str.to_lowercase().str.strip()
-    )
-    rcsb_data = rcsb_data.with_columns(
-        pl.col("macromolecule_name").str.to_lowercase().str.strip()
-    )
-
-    print("Realizando JOIN...")
-
-    # Realizar el merge (INNER JOIN) en Polars
-    combined_data = biogrid_data.join(
-        rcsb_data, 
-        left_on="official_symbol", 
-        right_on="macromolecule_name", 
-        how="inner"
-    )
-
-    print(f"JOIN completado. Registros combinados: {len(combined_data)}")
-    
-    # Verificar contenido de los datos combinados
-    print("Combined Data Sample:")
-    print(combined_data.head())
+    print("Cargando datos combinados desde archivo local...")
+    combined_data = pl.read_csv(COMBINED_DATA_PATH)
+    print(f"Archivo combinado cargado con {len(combined_data)} registros.")
 
 except Exception as e:
-    print(f"Error al cargar y combinar los datos: {e}")
+    print(f"Error al cargar el archivo combinado: {e}")
     combined_data = None
 
 # Convertir el dataframe de Polars a Pandas si tiene datos
 if combined_data is not None and len(combined_data) > 0:
     combined_data = combined_data.to_pandas()
 else:
-    print("Advertencia: El dataframe combinado está vacío. Revisa los datos de entrada y las claves de combinación.")
+    print("Advertencia: El dataframe combinado está vacío. Revisa el archivo en la carpeta data.")
 
 # Initialize Dash app
 app = dash.Dash(__name__)
