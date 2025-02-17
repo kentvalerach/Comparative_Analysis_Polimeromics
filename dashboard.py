@@ -12,9 +12,9 @@ RCSB_PATH = "data/rcsb_pdb.csv"
 try:
     print("Cargando datos desde archivos locales...")
     
-    # Leer los archivos CSV con Polars
-    biogrid_data = pl.read_csv(BIOGRID_PATH)
-    rcsb_data = pl.read_csv(RCSB_PATH)
+    # Leer los archivos CSV con Polars con inferencia mejorada de tipos
+    biogrid_data = pl.read_csv(BIOGRID_PATH, infer_schema_length=10000)
+    rcsb_data = pl.read_csv(RCSB_PATH, infer_schema_length=10000)
 
     print("Datos cargados exitosamente. Realizando JOIN...")
 
@@ -26,6 +26,11 @@ try:
         rcsb_data["macromolecule_name"].str.strip_chars().str.to_lowercase()
     )
 
+    # Convertir la columna con problemas a float64 antes del JOIN
+    rcsb_data = rcsb_data.with_columns(
+        rcsb_data["number_of_water_molecules"].cast(pl.Float64, strict=False)
+    )
+
     # Realizar el merge (INNER JOIN) en Polars
     combined_data = biogrid_data.join(
         rcsb_data, 
@@ -33,6 +38,7 @@ try:
         right_on="macromolecule_name", 
         how="inner"
     )
+    
     # Limitar la carga a solo el 10% de los datos después del JOIN
     combined_data = combined_data.sample(fraction=0.1, seed=42)
 
