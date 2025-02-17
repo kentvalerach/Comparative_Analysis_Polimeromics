@@ -6,7 +6,6 @@ polars
 sqlalchemy==2.0.15
 psycopg2-binary==2.9.10
 gunicorn==21.0.1
---include=data/
 
 # Instalar pywin32 solo en Windows
 pywin32==308; sys_platform == "win32"
