@@ -2,38 +2,34 @@ import dash
 from dash import dcc, html, Input, Output, State
 import pandas as pd
 import plotly.graph_objs as go
+from sqlalchemy import create_engine
 import os
 
-# Definir rutas de los archivos en la carpeta data/
-BIOGRID_PATH = "data/biogrid_homosapiens.csv"
-RCSB_PATH = "data/rcsb_pdb.csv"
+# Obtener la URL de la base de datos desde las variables de entorno
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-# Cargar los datos desde los archivos en lugar de la base de datos
+# Crear un motor SQLAlchemy
+engine = create_engine(DATABASE_URL)
+
 try:
-    print("Cargando datos desde archivos locales...")
-
-    # Leer los archivos CSV
-    biogrid_data = pd.read_csv(BIOGRID_PATH)
-    rcsb_data = pd.read_csv(RCSB_PATH)
-
-    print("Datos cargados exitosamente. Realizando JOIN...")
-
-    # Normalizar claves para evitar problemas de espacios y mayúsculas
-    biogrid_data["official_symbol"] = biogrid_data["official_symbol"].str.lower().str.strip()
-    rcsb_data["macromolecule_name"] = rcsb_data["macromolecule_name"].str.lower().str.strip()
-
-    # Realizar el merge (INNER JOIN) en Pandas
-    combined_data = biogrid_data.merge(
-        rcsb_data, 
-        left_on="official_symbol", 
-        right_on="macromolecule_name", 
-        how="inner"
-    )
-
-    print(f"JOIN completado. Registros combinados: {len(combined_data)}")
+    # Usar INNER JOIN en SQL para evitar merge en Pandas
+    query = """
+    SELECT 
+        b.*, 
+        r.*
+    FROM biogrid_homosapiens AS b
+    INNER JOIN rcsb_pdb AS r
+    ON LOWER(TRIM(b.official_symbol)) = LOWER(TRIM(r.macromolecule_name))
+    """
+    
+    # Cargar datos por lotes para evitar consumir demasiada memoria RAM
+    data_generator = pd.read_sql_query(query, engine, chunksize=5000)
+    combined_data = pd.concat(data_generator, ignore_index=True)
+    
+    print(f"Datos combinados exitosamente: {len(combined_data)} registros.")
 
 except Exception as e:
-    print(f"Error al cargar y combinar los datos: {e}")
+    print(f"Error al cargar los datos: {e}")
     combined_data = None
 
 # Initialize Dash app
