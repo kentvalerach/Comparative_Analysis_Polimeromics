@@ -1,66 +1,51 @@
 import dash
 from dash import dcc, html, Input, Output, State
-import polars as pl
+import pandas as pd
 import plotly.graph_objs as go
 import os
-import urllib.request
 
-DATA_DIR = "data"
-COMBINED_DATA_PATH = os.path.join(DATA_DIR, "combined_data.csv")
+# Definieren Sie die Pfade zu den Dateien im Ordner data/.
+# Definir rutas de los archivos en la carpeta data/
+BIOGRID_PATH = "data/biogrid_homosapiens.csv"
+RCSB_PATH = "data/rcsb_pdb.csv"
 
-# Crear la carpeta 'data' si no existe
-if not os.path.exists(DATA_DIR):
-    os.makedirs(DATA_DIR)
-
-# Verificar si el archivo no está en Railway y descargarlo desde GitHub
-if not os.path.exists(COMBINED_DATA_PATH):
-    github_url = "https://raw.githubusercontent.com/kentvalerach/Comparative_Analysis_Polimeromics/main/data/combined_data.csv"
-    print(f"Descargando datos desde {github_url}...")
-    urllib.request.urlretrieve(github_url, COMBINED_DATA_PATH)
-    print("Archivo descargado exitosamente.")
-
-# Verificar si el archivo realmente existe y mostrar su contenido
-if os.path.exists(COMBINED_DATA_PATH):
-    print(f"✅ Archivo encontrado: {COMBINED_DATA_PATH}")
-else:
-    print("❌ Error: El archivo no fue encontrado en la carpeta data/")
-
-# Cargar los datos combinados desde el archivo preprocesado
-combined_data = None
+# Daten aus Dateien statt aus der Datenbank laden
+# Cargar los datos desde los archivos en lugar de la base de datos
 try:
-    print("Cargando datos combinados desde archivo local...")
-    combined_data = pl.read_csv(
-        COMBINED_DATA_PATH, 
-        dtypes={"identifier_id": str},  # Forzar la columna identifier_id como string
-        ignore_errors=True  # Ignorar errores de conversión
+    print("Cargando datos desde archivos locales...")
+    
+    # CSV-Dateien lesen
+    # Leer los archivos CSV
+    biogrid_data = pd.read_csv(BIOGRID_PATH)
+    rcsb_data = pd.read_csv(RCSB_PATH)
+
+    print("Datos cargados exitosamente. Realizando JOIN...")
+
+    # Schlüssel normalisieren, um Probleme mit Leerzeichen und Großschreibung zu vermeiden
+    # Normalizar claves para evitar problemas de espacios y mayúsculas
+    biogrid_data["official_symbol"] = biogrid_data["official_symbol"].str.lower().str.strip()
+    rcsb_data["macromolecule_name"] = rcsb_data["macromolecule_name"].str.lower().str.strip()
+
+    # Realizar el merge (INNER JOIN) en Pandas
+    combined_data = biogrid_data.merge(
+        rcsb_data, 
+        left_on="official_symbol", 
+        right_on="macromolecule_name", 
+        how="inner"
     )
-    print(f"Archivo combinado cargado con {len(combined_data)} registros y {len(combined_data.columns)} columnas.")
-    print("Nombres de columnas disponibles en combined_data:")
-    print(combined_data.columns)
+    # Limitar la carga a solo el 10% de los datos después del JOIN
+    combined_data = combined_data.sample(frac=0.1, random_state=42)
 
-    # Renombrar columnas para que coincidan con lo esperado por el dashboard
-    rename_mapping = {
-        "symbol": "official_symbol",
-        "unique_i": "unique_id_x",
-        "entry_id": "entry_id",
-        "macromolecule": "macromolecule_name"
-    }
-    combined_data = combined_data.rename(rename_mapping)
-    print("Columnas después de renombrar:", combined_data.columns.tolist())
-
-    # Convertir a pandas para Dash
-    combined_data = combined_data.to_pandas()
+    print(f"JOIN completado. Registros combinados: {len(combined_data)}")
 
 except Exception as e:
-    print(f"Error al cargar el archivo combinado: {e}")
+    print(f"Error al cargar y combinar los datos: {e}")
     combined_data = None
-
-if combined_data is None or combined_data.empty:
-    print("⚠️ Advertencia: El dataframe combinado está vacío. Revisa el archivo en la carpeta data.")
 
 # Initialize Dash app
 app = dash.Dash(__name__)
 server = app.server  # Exponer el servidor Flask
+
 
 app.layout = html.Div([
     html.H1("Comparative Analysis Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
@@ -92,6 +77,35 @@ app.layout = html.Div([
                 'overflowY': 'scroll',
                 'maxHeight': '300px'
             }),
+            html.Div([
+                html.H3("Biomedical and Genetic Insights"),
+                html.P("The data presented in this dashboard integrates molecular interaction information (BIOGRID) "
+                       "and structural details of macromolecules (RCSB PDB). This combination offers valuable insights "
+                       "into the genetic and biochemical mechanisms underlying human physiology and disease."),
+                html.P("Potential biomedical applications include:"),
+                html.Ul([
+                    html.Li("**Drug Discovery**: Identifying potential drug targets by analyzing protein structures and "
+                            "their interaction patterns."),
+                    html.Li("**Gene Function Analysis**: Elucidating the functional roles of genes and proteins in "
+                            "biological pathways by studying interaction networks."),
+                    html.Li("**Precision Medicine**: Supporting personalized therapeutic approaches by linking structural "
+                            "variations to specific genetic markers.")
+                ]),
+                html.P("A unique aspect of this analysis is the integration of two comprehensive datasets—BIOGRID and RCSB PDB—which allows "
+                       "for predictive modeling. The presence of an objective variable, **HIT**, provides a foundation for "
+                       "machine learning approaches to predict key biological interactions. Additionally, the inclusion of "
+                       "structural and functional information on macromolecules like **Notum** and **Furin** enhances the ability "
+                       "to explore critical biochemical pathways."),
+                html.P("This data-driven approach empowers researchers to uncover novel therapeutic strategies and "
+                       "enhance our understanding of human biology at a molecular level by linking genetic insights with macromolecular data." 
+                       "You can access the Python script in the repository https://github.com/kentvalerach/Polimeromic")
+            ], style={
+                'marginTop': '20px',
+                'padding': '10px',
+                'border': '1px solid black',
+                'backgroundColor': '#f9f9f9',
+                'lineHeight': '1.6'
+            }),
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'}),
     ], style={'display': 'flex', 'justifyContent': 'space-between'}),
 ])
@@ -107,36 +121,78 @@ app.layout = html.Div([
     [State('record-index', 'children')]
 )
 def update_dashboard(prev_clicks, next_clicks, current_index):
-    if combined_data is None or combined_data.empty:
-        print("❌ No hay datos disponibles en el DataFrame")
-        return "No data available", "No BIOGRID data", "No RCSB data", go.Figure(), go.Figure()
-
-    if current_index is None or isinstance(current_index, str):
+    # Determine the current index
+    if current_index is None:
         current_index = 0
     else:
-        try:
-            current_index = int(current_index.split(": ")[-1])
-        except ValueError:
-            current_index = 0
+        current_index = int(current_index.split(": ")[1])
 
+    # Adjust the index based on button clicks
     new_index = current_index + (1 if next_clicks > prev_clicks else -1)
     new_index = max(0, min(len(combined_data) - 1, new_index))
 
+    # Get the current record
     current_record = combined_data.iloc[new_index]
 
-    # Depuración: Mostrar el registro actual
-    print("Registro actual:", current_record.to_dict())
+    # BIOGRID details: show all columns
+    biogrid_details = "\n".join([
+        f"{col}: {current_record.get(col, 'N/A')}" for col in biogrid_data.columns
+    ])
 
-    # Manejo seguro de acceso a columnas
-    biogrid_symbol = current_record.get('official_symbol', 'N/A')
-    biogrid_id = current_record.get('unique_id_x', 'N/A')
-    rcsb_entry = current_record.get('entry_id', 'N/A')
-    rcsb_macro = current_record.get('macromolecule_name', 'N/A')
+    # RCSB details: show all columns with special handling for long rows
+    rcsb_details = "\n".join([
+        f"{col}: {current_record.get(col, 'N/A')}" if col not in ['crystal_growth_procedure', 'structure_title']
+        else f"{col}: {current_record[col][:100]}..."  # Limit long rows to 100 characters
+        for col in rcsb_data.columns
+    ])
 
-    biogrid_details = f"Official Symbol: {biogrid_symbol}\nUnique ID: {biogrid_id}"
-    rcsb_details = f"Entry ID: {rcsb_entry}\nMacromolecule: {rcsb_macro}"
+    # Dynamic Graphs with context and highlighted point
+    comparison_plot_1 = {
+        'data': [
+            {'x': rcsb_data["percent_solvent_content"],
+             'y': rcsb_data["ph"],
+             'mode': 'markers',
+             'marker': {'color': 'lightblue', 'size': 8},
+             'name': 'All Records'},
+            {'x': [current_record["percent_solvent_content"]],
+             'y': [current_record["ph"]],
+             'mode': 'markers',
+             'marker': {'color': 'blue', 'size': 12, 'symbol': 'star'},
+             'name': 'Selected Record'},
+        ],
+        'layout': {
+            'title': 'Percent Solvent Content vs pH',
+            'xaxis': {'title': 'Percent Solvent Content'},
+            'yaxis': {'title': 'pH'}
+        }
+    }
 
-    return f"Current index: {new_index}", biogrid_details, rcsb_details, go.Figure(), go.Figure()
+    comparison_plot_2 = {
+        'data': [
+            {'x': rcsb_data["temp_k"],
+             'y': rcsb_data["molecular_weight"],
+             'mode': 'markers',
+             'marker': {'color': 'lightgreen', 'size': 8},
+             'name': 'All Records'},
+            {'x': [current_record["temp_k"]],
+             'y': [current_record["molecular_weight"]],
+             'mode': 'markers',
+             'marker': {'color': 'green', 'size': 12, 'symbol': 'star'},
+             'name': 'Selected Record'},
+        ],
+        'layout': {
+            'title': 'Temperature (K) vs Molecular Weight',
+            'xaxis': {'title': 'Temp (K)'},
+            'yaxis': {'title': 'Molecular Weight'}
+        }
+    }
+
+    return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
+
+# Run the app
+
+server = app.server
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
