@@ -13,27 +13,25 @@ try:
     print("Cargando datos desde archivos locales...")
     
     # Leer los archivos CSV con Polars asegurando inferencia correcta de tipos
-    biogrid_data = pl.read_csv(BIOGRID_PATH, infer_schema_length=10000)
-    rcsb_data = pl.read_csv(RCSB_PATH, infer_schema_length=10000)
+    biogrid_data = pl.read_csv(BIOGRID_PATH, infer_schema_length=10000, try_parse_dates=True)
+    rcsb_data = pl.read_csv(RCSB_PATH, infer_schema_length=10000, try_parse_dates=True)
+    
+    print("Datos cargados exitosamente. Verificando datos...")
+    print(f"Registros en BIOGRID: {len(biogrid_data)}")
+    print(f"Registros en RCSB: {len(rcsb_data)}")
 
-    print("Datos cargados exitosamente. Realizando JOIN...")
-
-    # Normalizar claves para evitar problemas de espacios y mayúsculas
-    biogrid_data = biogrid_data.with_columns(
-        pl.col("official_symbol").str.strip_chars().str.to_lowercase()
-    )
-    rcsb_data = rcsb_data.with_columns(
-        pl.col("macromolecule_name").str.strip_chars().str.to_lowercase()
-    )
+    # Asegurar que las claves de unión sean de tipo String
+    biogrid_data = biogrid_data.with_columns(pl.col("official_symbol").cast(pl.Utf8).str.strip_chars().str.to_lowercase())
+    rcsb_data = rcsb_data.with_columns(pl.col("macromolecule_name").cast(pl.Utf8).str.strip_chars().str.to_lowercase())
 
     # Convertir columnas problemáticas a Float64 antes del JOIN para evitar errores
     problematic_columns = ["number_of_water_molecules", "molecular_weight"]
     for col in problematic_columns:
         if col in rcsb_data.columns:
-            rcsb_data = rcsb_data.with_columns(
-                pl.col(col).cast(pl.Float64, strict=False)
-            )
+            rcsb_data = rcsb_data.with_columns(pl.col(col).cast(pl.Float64, strict=False))
 
+    print("Realizando JOIN...")
+    
     # Realizar el merge (INNER JOIN) en Polars
     combined_data = biogrid_data.join(
         rcsb_data, 
@@ -41,6 +39,10 @@ try:
         right_on="macromolecule_name", 
         how="inner"
     )
+    
+    # Validar que haya registros en el conjunto combinado
+    if len(combined_data) == 0:
+        raise ValueError("El JOIN no generó registros. Verifica los datos de entrada.")
     
     # Limitar la carga a solo el 10% de los datos después del JOIN
     combined_data = combined_data.sample(fraction=0.1, seed=42)
