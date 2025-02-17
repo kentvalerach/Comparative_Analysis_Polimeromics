@@ -4,20 +4,24 @@ import pandas as pd
 import plotly.graph_objs as go
 import os
 
+# Definieren Sie die Pfade zu den Dateien im Ordner data/.
 # Definir rutas de los archivos en la carpeta data/
 BIOGRID_PATH = "data/biogrid_homosapiens.csv"
 RCSB_PATH = "data/rcsb_pdb.csv"
 
+# Daten aus Dateien statt aus der Datenbank laden
 # Cargar los datos desde los archivos en lugar de la base de datos
 try:
     print("Cargando datos desde archivos locales...")
-
+    
+    # CSV-Dateien lesen
     # Leer los archivos CSV
     biogrid_data = pd.read_csv(BIOGRID_PATH)
     rcsb_data = pd.read_csv(RCSB_PATH)
 
     print("Datos cargados exitosamente. Realizando JOIN...")
 
+    # Schlüssel normalisieren, um Probleme mit Leerzeichen und Großschreibung zu vermeiden
     # Normalizar claves para evitar problemas de espacios y mayúsculas
     biogrid_data["official_symbol"] = biogrid_data["official_symbol"].str.lower().str.strip()
     rcsb_data["macromolecule_name"] = rcsb_data["macromolecule_name"].str.lower().str.strip()
