@@ -39,9 +39,20 @@ try:
         ignore_errors=True  # Ignorar errores de conversión
     )
     print(f"Archivo combinado cargado con {len(combined_data)} registros y {len(combined_data.columns)} columnas.")
-    print("Muestra de datos:")
-    print(combined_data.head())
+    print("Nombres de columnas disponibles en combined_data:")
+    print(combined_data.columns)
     combined_data = combined_data.to_pandas()
+
+    # Renombrar columnas para que coincidan con lo esperado por el dashboard
+    rename_mapping = {
+        "symbol": "official_symbol",
+        "unique_i": "unique_id_x",
+        "entry": "entry_id",
+        "macromolecule": "macromolecule_name"
+    }
+    combined_data = combined_data.rename(columns={k: v for k, v in rename_mapping.items() if k in combined_data.columns})
+    print("Columnas después de renombrar:", combined_data.columns.tolist())
+
 except Exception as e:
     print(f"Error al cargar el archivo combinado: {e}")
     combined_data = None
@@ -111,16 +122,6 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
 
     current_record = combined_data.iloc[new_index]
     
-    # Depuración: Mostrar nombres de las columnas disponibles
-    print("Columnas disponibles en combined_data:", combined_data.columns.tolist())
-    
-    # Verificar nombres de columnas antes de acceder
-    required_columns = ["official_symbol", "unique_id_x", "entry_id", "macromolecule_name"]
-    missing_columns = [col for col in required_columns if col not in combined_data.columns]
-    if missing_columns:
-        print(f"Advertencia: Faltan las siguientes columnas en combined_data: {missing_columns}")
-        return "Column mismatch", "Missing BIOGRID data", "Missing RCSB data", {}, {}
-
     biogrid_details = f"Official Symbol: {current_record['official_symbol']}\nUnique ID: {current_record['unique_id_x']}"
     rcsb_details = f"Entry ID: {current_record['entry_id']}\nMacromolecule: {current_record['macromolecule_name']}"
 
