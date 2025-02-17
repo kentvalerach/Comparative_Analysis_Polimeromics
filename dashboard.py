@@ -14,7 +14,7 @@ try:
     
     # Leer los archivos CSV con Polars con inferencia mejorada de tipos
     biogrid_data = pl.read_csv(BIOGRID_PATH, infer_schema_length=10000)
-    rcsb_data = pl.read_csv(RCSB_PATH, infer_schema_length=10000)
+    rcsb_data = pl.read_csv(RCSB_PATH, infer_schema_length=10000, schema_overrides={"number_of_water_molecules": pl.Float64})
 
     print("Datos cargados exitosamente. Realizando JOIN...")
 
