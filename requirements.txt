@@ -2,6 +2,7 @@ dash==2.18.2
 dash-bootstrap-components==1.6.0
 plotly==5.24.1
 pandas==2.2.3
+polars
 sqlalchemy==2.0.15
 psycopg2-binary==2.9.10
 gunicorn==21.0.1
