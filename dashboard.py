@@ -34,7 +34,7 @@ join_query = """
     FROM biogrid_homosapiens
     INNER JOIN rcsb_pdb
     ON LOWER(TRIM(biogrid_homosapiens.official_symbol)) = LOWER(TRIM(rcsb_pdb.macromolecule_name))
-    LIMIT 5000
+    LIMIT 500
 """
 
 try:
