@@ -6,12 +6,7 @@ import os
 import psycopg2
 import pandas as pd
 from sqlalchemy import create_engine
-
-
-
-import os
-import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy.pool import QueuePool
 
 # Obtener la URL de la base de datos desde las variables de entorno
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -19,10 +14,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL is None:
     raise ValueError("No se encontró la variable de entorno DATABASE_URL. Asegúrate de configurarla en Railway.")
 
-DATABASE_URL += "?pool_size=5&max_overflow=10"
-
-# Conectar a PostgreSQL en Railway
-engine = create_engine(DATABASE_URL)
+# Crear el engine de SQLAlchemy con configuración de pool de conexiones
+engine = create_engine(DATABASE_URL, poolclass=QueuePool, pool_size=5, max_overflow=10)
 
 try:
     print("Conectando a PostgreSQL en Railway...")
@@ -63,6 +56,7 @@ except Exception as e:
 
 finally:
     engine.dispose()  # Cierra la conexión correctamente
+
 
 
 # Initialize Dash app
