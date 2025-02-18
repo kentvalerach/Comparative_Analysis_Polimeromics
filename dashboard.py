@@ -43,6 +43,11 @@ except Exception as e:
 if combined_data is not None:
     combined_data = combined_data.sample(frac=0.1, random_state=42)
     print(combined_data.head(5))  # Muestra las primeras 5 filas del dataset combinado
+if combined_data is None or combined_data.empty:
+    print("⚠️ Error: combined_data está vacío en Dash.")
+else:
+    print(f"✅ Datos disponibles en Dash: {len(combined_data)} registros.")
+
 
 # Cerrar conexión
 conn.close()
