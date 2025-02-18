@@ -9,6 +9,10 @@ from sqlalchemy import create_engine
 
 
 
+import os
+import pandas as pd
+from sqlalchemy import create_engine
+
 # Obtener la URL de la base de datos desde las variables de entorno
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -22,34 +26,44 @@ engine = create_engine(DATABASE_URL)
 
 try:
     print("Conectando a PostgreSQL en Railway...")
-    conn = engine.connect()
-    print("Conexión exitosa.")
-except Exception as e:
-    print(f"Error al conectar a PostgreSQL: {e}")
-    exit()
+    with engine.connect() as conn:
+        print("Conexión exitosa.")
 
-# Realizar el JOIN en SQL directamente en PostgreSQL
-join_query = """
-    SELECT * FROM biogrid_homosapiens
-    INNER JOIN rcsb_pdb
-    ON LOWER(TRIM(biogrid_homosapiens.official_symbol)) = LOWER(TRIM(rcsb_pdb.macromolecule_name))
-"""
+        # Realizar el JOIN en SQL directamente en PostgreSQL
+        join_query = """
+            SELECT biogrid_homosapiens.official_symbol, 
+                   biogrid_homosapiens.identifier_id, 
+                   biogrid_homosapiens.identifier_type, 
+                   biogrid_homosapiens.aliases,
+                   rcsb_pdb.macromolecule_name, 
+                   rcsb_pdb.experimental_method, 
+                   rcsb_pdb.molecular_weight, 
+                   rcsb_pdb.ph, 
+                   rcsb_pdb.temp_k
+            FROM biogrid_homosapiens
+            INNER JOIN rcsb_pdb
+            ON LOWER(TRIM(biogrid_homosapiens.official_symbol)) = LOWER(TRIM(rcsb_pdb.macromolecule_name))
+            LIMIT 5000;
+        """
 
-try:
-    print("Ejecutando JOIN en PostgreSQL...")
-    combined_data = pd.read_sql(join_query, conn)
-    print(f"JOIN completado. Registros combinados: {len(combined_data)}")
+        print("Ejecutando JOIN en PostgreSQL...")
+        combined_data = pd.read_sql(join_query, conn)
+
+        print(f"JOIN completado. Registros combinados: {len(combined_data)}")
+
+        # Limitar la carga a solo el 10% de los datos después del JOIN
+        if not combined_data.empty:
+            combined_data = combined_data.sample(frac=0.1, random_state=42)
+            print(combined_data.head(5))  # Muestra las primeras 5 filas del dataset combinado
+        else:
+            print("⚠️ Advertencia: No se encontraron registros en el JOIN.")
+
 except Exception as e:
     print(f"Error al ejecutar el JOIN en PostgreSQL: {e}")
-    combined_data = None
 
-# Limitar la carga a solo el 10% de los datos después del JOIN
-if combined_data is not None:
-    combined_data = combined_data.sample(frac=0.1, random_state=42)
-    print(combined_data.head(5))  # Muestra las primeras 5 filas del dataset combinado
+finally:
+    engine.dispose()  # Cierra la conexión correctamente
 
-# Cerrar conexión
-conn.close()
 
 # Initialize Dash app
 app = dash.Dash(__name__)
