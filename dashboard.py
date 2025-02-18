@@ -3,56 +3,49 @@ from dash import dcc, html, Input, Output, State
 import polars as pl
 import plotly.graph_objs as go
 import os
+import psycopg2
+import pandas as pd
+from sqlalchemy import create_engine
 
-# Definir rutas de los archivos en la carpeta data/
-BIOGRID_PATH = "data/biogrid_homosapiens.csv"
-RCSB_PATH = "data/rcsb_pdb.csv"
+# Obtener la URL de la base de datos desde las variables de entorno
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Cargar los datos desde los archivos en lugar de la base de datos
+if not DATABASE_URL:
+    raise ValueError("No se encontró la variable de entorno DATABASE_URL. Asegúrate de configurarla correctamente.")
+
+# Conectar a PostgreSQL en Railway
+engine = create_engine(DATABASE_URL)
+
 try:
-    print("Cargando datos desde archivos locales...")
-    
-    # Leer los archivos CSV con Polars asegurando inferencia correcta de tipos
-    biogrid_data = pl.read_csv(BIOGRID_PATH, infer_schema_length=10000, try_parse_dates=True)
-    rcsb_data = pl.read_csv(RCSB_PATH, infer_schema_length=10000, try_parse_dates=True)
-    
-    print("Datos cargados exitosamente. Verificando datos...")
-    print(f"Registros en BIOGRID: {len(biogrid_data)}")
-    print(f"Registros en RCSB: {len(rcsb_data)}")
+    print("Conectando a PostgreSQL en Railway...")
+    conn = engine.connect()
+    print("Conexión exitosa.")
+except Exception as e:
+    print(f"Error al conectar a PostgreSQL: {e}")
+    exit()
 
-    # Asegurar que las claves de unión sean de tipo String
-    biogrid_data = biogrid_data.with_columns(pl.col("official_symbol").cast(pl.Utf8).str.strip_chars().str.to_lowercase())
-    rcsb_data = rcsb_data.with_columns(pl.col("macromolecule_name").cast(pl.Utf8).str.strip_chars().str.to_lowercase())
+# Realizar el JOIN en SQL directamente en PostgreSQL
+join_query = """
+    SELECT * FROM biogrid_homosapiens
+    INNER JOIN rcsb_pdb
+    ON LOWER(TRIM(biogrid_homosapiens.official_symbol)) = LOWER(TRIM(rcsb_pdb.macromolecule_name))
+"""
 
-    # Convertir columnas problemáticas a Float64 antes del JOIN para evitar errores
-    problematic_columns = ["number_of_water_molecules", "molecular_weight"]
-    for col in problematic_columns:
-        if col in rcsb_data.columns:
-            rcsb_data = rcsb_data.with_columns(pl.col(col).cast(pl.Float64, strict=False))
-
-    print("Realizando JOIN...")
-    
-    # Realizar el merge (INNER JOIN) en Polars
-    combined_data = biogrid_data.join(
-        rcsb_data, 
-        left_on="official_symbol", 
-        right_on="macromolecule_name", 
-        how="inner"
-    )
-    
-    # Validar que haya registros en el conjunto combinado
-    if len(combined_data) == 0:
-        raise ValueError("El JOIN no generó registros. Verifica los datos de entrada.")
-    
-    # Limitar la carga a solo el 10% de los datos después del JOIN
-    combined_data = combined_data.sample(fraction=0.1, seed=42)
-
+try:
+    print("Ejecutando JOIN en PostgreSQL...")
+    combined_data = pd.read_sql(join_query, conn)
     print(f"JOIN completado. Registros combinados: {len(combined_data)}")
+except Exception as e:
+    print(f"Error al ejecutar el JOIN en PostgreSQL: {e}")
+    combined_data = None
+
+# Limitar la carga a solo el 10% de los datos después del JOIN
+if combined_data is not None:
+    combined_data = combined_data.sample(frac=0.1, random_state=42)
     print(combined_data.head(5))  # Muestra las primeras 5 filas del dataset combinado
 
-except Exception as e:
-    print(f"Error al cargar y combinar los datos: {e}")
-    combined_data = None
+# Cerrar conexión
+conn.close()
 
 # Initialize Dash app
 app = dash.Dash(__name__)
@@ -120,90 +113,6 @@ app.layout = html.Div([
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'}),
     ], style={'display': 'flex', 'justifyContent': 'space-between'}),
 ])
-@app.callback(
-    [Output('record-index', 'children'),
-     Output('biogrid-details', 'children'),
-     Output('rcsb-details', 'children'),
-     Output('comparison-plot-1', 'figure'),
-     Output('comparison-plot-2', 'figure')],
-    [Input('prev-button', 'n_clicks'),
-     Input('next-button', 'n_clicks')],
-    [State('record-index', 'children')]
-)
-def update_dashboard(prev_clicks, next_clicks, current_index):
-    global combined_data  # Asegurar acceso a la variable global
-
-    if combined_data is None or len(combined_data) == 0:
-        return "No data available", "", "", {}, {}
-
-    # Convertir a Pandas antes de usar .iloc
-    combined_data_pd = combined_data.to_pandas()
-
-    # Determinar el índice actual
-    if current_index is None:
-        current_index = 0
-    else:
-        current_index = int(current_index.split(": ")[1])
-
-    # Ajustar el índice basado en los botones
-    new_index = current_index + (1 if next_clicks > prev_clicks else -1)
-    new_index = max(0, min(len(combined_data_pd) - 1, new_index))
-
-    # Obtener el registro actual
-    current_record = combined_data_pd.iloc[new_index]
-
-    # BIOGRID details: mostrar todas las columnas
-    biogrid_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" for col in biogrid_data.columns
-    ])
-
-    # RCSB details: mostrar todas las columnas
-    rcsb_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" for col in rcsb_data.columns
-    ])
-
-    # Gráficos dinámicos con contexto y punto resaltado
-    comparison_plot_1 = {
-        'data': [
-            {'x': combined_data_pd["percent_solvent_content"],
-             'y': combined_data_pd["ph"],
-             'mode': 'markers',
-             'marker': {'color': 'lightblue', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["percent_solvent_content"]],
-             'y': [current_record["ph"]],
-             'mode': 'markers',
-             'marker': {'color': 'blue', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
-        ],
-        'layout': {
-            'title': 'Percent Solvent Content vs pH',
-            'xaxis': {'title': 'Percent Solvent Content'},
-            'yaxis': {'title': 'pH'}
-        }
-    }
-
-    comparison_plot_2 = {
-        'data': [
-            {'x': combined_data_pd["temp_k"],
-             'y': combined_data_pd["molecular_weight"],
-             'mode': 'markers',
-             'marker': {'color': 'lightgreen', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["temp_k"]],
-             'y': [current_record["molecular_weight"]],
-             'mode': 'markers',
-             'marker': {'color': 'green', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
-        ],
-        'layout': {
-            'title': 'Temperature (K) vs Molecular Weight',
-            'xaxis': {'title': 'Temp (K)'},
-            'yaxis': {'title': 'Molecular Weight'}
-        }
-    }
-
-    return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
 
 server = app.server
 
