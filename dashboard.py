@@ -8,10 +8,12 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 
-DATABASE_URL = os.getenv("RAILWAY_PRIVATE_DOMAIN")
+
+# Obtener la URL de la base de datos desde las variables de entorno
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL is None:
-    raise ValueError("No se encontró la variable de entorno RAILWAY_PRIVATE_DOMAIN. Asegúrate de configurarla correctamente en Railway.")
+    raise ValueError("No se encontró la variable de entorno DATABASE_URL. Asegúrate de configurarla en Railway.")
 
 DATABASE_URL += "?pool_size=5&max_overflow=10"
 
