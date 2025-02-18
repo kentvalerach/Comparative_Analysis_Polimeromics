@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise ValueError("No se encontró la variable de entorno DATABASE_URL. Asegúrate de configurarla correctamente.")
+    raise ValueError("No se encontró la variable de entorno DATABASE_URL")
 
 # Conectar a PostgreSQL en Railway
 engine = create_engine(DATABASE_URL)
