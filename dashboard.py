@@ -26,16 +26,9 @@ except Exception as e:
     exit()
 
 # Realizar el JOIN en SQL directamente en PostgreSQL con selección de columnas necesarias
-join_query = """
-    SELECT biogrid_homosapiens.official_symbol, biogrid_homosapiens.identifier_id,
-           biogrid_homosapiens.identifier_type, biogrid_homosapiens.aliases,
-           rcsb_pdb.macromolecule_name, rcsb_pdb.experimental_method,
-           rcsb_pdb.molecular_weight, rcsb_pdb.ph, rcsb_pdb.temp_k
-    FROM biogrid_homosapiens
-    INNER JOIN rcsb_pdb
-    ON LOWER(TRIM(biogrid_homosapiens.official_symbol)) = LOWER(TRIM(rcsb_pdb.macromolecule_name))
-    LIMIT 500
-"""
+join_query = "SELECT * FROM joined_biogrid_rcsb LIMIT 5000"
+join_query = "SELECT * FROM joined_biogrid_rcsb LIMIT 5000"
+
 
 try:
     print("Ejecutando JOIN en PostgreSQL...")
