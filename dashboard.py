@@ -100,7 +100,7 @@ app.layout = html.Div([
                     html.Li("**Gene Function Analysis**: Elucidating the functional roles of genes and proteins in "
                             "biological pathways by studying interaction networks."),
                     html.Li("**Precision Medicine**: Supporting personalized therapeutic approaches by linking structural "
-                            "variations to specific genetic markers.")
+                            "variations to specific genetic markers.")  
                 ]),
                 html.P("A unique aspect of this analysis is the integration of two comprehensive datasets—BIOGRID and RCSB PDB—which allows "
                        "for predictive modeling. The presence of an objective variable, **HIT**, provides a foundation for "
