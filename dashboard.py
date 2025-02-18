@@ -26,10 +26,7 @@ except Exception as e:
 
 # Realizar el JOIN en SQL directamente en PostgreSQL
 join_query = """
-    SELECT biogrid_homosapiens.official_symbol, biogrid_homosapiens.identifier_id,
-           biogrid_homosapiens.identifier_type, biogrid_homosapiens.aliases,
-           rcsb_pdb.macromolecule_name, rcsb_pdb.experimental_method,
-           rcsb_pdb.molecular_weight, rcsb_pdb.ph, rcsb_pdb.temp_k
+    SELECT biogrid_homosapiens.*, rcsb_pdb.*
     FROM biogrid_homosapiens
     INNER JOIN rcsb_pdb
     ON LOWER(TRIM(biogrid_homosapiens.official_symbol)) = LOWER(TRIM(rcsb_pdb.macromolecule_name))
@@ -118,8 +115,8 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     
     current_record = combined_data.iloc[new_index]
 
-    biogrid_details = f"Official Symbol: {current_record['official_symbol']}\nIdentifier: {current_record['identifier_id']}\nType: {current_record['identifier_type']}"
-    rcsb_details = f"Macromolecule Name: {current_record['macromolecule_name']}\nExperimental Method: {current_record['experimental_method']}\nMolecular Weight: {current_record['molecular_weight']}\n pH: {current_record['ph']}\n Temperature: {current_record['temp_k']}"
+    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns if col.startswith('biogrid')])
+    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns if col.startswith('rcsb')])
 
     figure1 = go.Figure(data=[go.Scatter(x=combined_data['molecular_weight'], y=combined_data['ph'], mode='markers')])
     figure1.update_layout(title='Molecular Weight vs pH', xaxis_title='Molecular Weight', yaxis_title='pH')
