@@ -7,11 +7,13 @@ import psycopg2
 import pandas as pd
 from sqlalchemy import create_engine
 
-# Obtener la URL de la base de datos desde las variables de entorno
-DATABASE_URL = os.getenv("DATABASE_URL")
 
-if not DATABASE_URL:
-    raise ValueError("No se encontró la variable de entorno DATABASE_URL")
+DATABASE_URL = os.getenv("RAILWAY_PRIVATE_DOMAIN")
+
+if DATABASE_URL is None:
+    raise ValueError("No se encontró la variable de entorno RAILWAY_PRIVATE_DOMAIN. Asegúrate de configurarla correctamente en Railway.")
+
+DATABASE_URL += "?pool_size=5&max_overflow=10"
 
 # Conectar a PostgreSQL en Railway
 engine = create_engine(DATABASE_URL)
