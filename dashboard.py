@@ -42,8 +42,8 @@ except Exception as e:
     combined_data = None
 
 # Limitar la carga a solo el 10% de los datos después del JOIN
-if combined_data is not None:
-    combined_data = combined_data.sample(frac=0.1, random_state=42)
+if combined_data is not None and not combined_data.empty:
+    combined_data = combined_data.sample(frac=0.1, random_state=42).reset_index(drop=True)
     print(combined_data.head(5))  # Muestra las primeras 5 filas del dataset combinado
 
 if combined_data is None or combined_data.empty:
@@ -114,9 +114,9 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     new_index = max(0, min(len(combined_data) - 1, new_index))
     
     current_record = combined_data.iloc[new_index]
- 
-    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns if col.startswith('biogrid')])
-    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns if col.startswith('rcsb')])
+
+    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns if 'biogrid' in col])
+    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns if 'rcsb' in col])
 
     figure1 = go.Figure(data=[go.Scatter(x=combined_data['molecular_weight'], y=combined_data['ph'], mode='markers')])
     figure1.update_layout(title='Molecular Weight vs pH', xaxis_title='Molecular Weight', yaxis_title='pH')
