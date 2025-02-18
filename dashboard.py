@@ -68,33 +68,22 @@ app.layout = html.Div([
         html.Div(id='record-index', style={'marginTop': '10px', 'color': '#34495e', 'fontWeight': 'bold'}),
     ], style={'textAlign': 'center', 'marginBottom': '20px'}),
 
-    # Main container split into two columns
+    # Data display
     html.Div([
-        html.Div([
-            html.H3("Comparison Graphs", style={'color': '#16a085'}),
-            dcc.Graph(id='comparison-plot-1'),
-            dcc.Graph(id='comparison-plot-2'),
-            html.H3("BIOGRID Data", style={'color': '#e67e22'}),
-            html.Pre(id='biogrid-details', style={'border': '1px solid #e67e22', 'padding': '10px', 'backgroundColor': '#fdf2e9'}),
-        ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
+        html.H3("Record Details", style={'color': '#16a085'}),
+        html.Pre(id='record-details', style={'border': '1px solid #e67e22', 'padding': '10px', 'backgroundColor': '#fdf2e9', 'whiteSpace': 'pre-wrap'}),
+    ], style={'width': '90%', 'margin': 'auto', 'padding': '10px'}),
 
-        html.Div([
-            html.H3("RCSB Data", style={'color': '#8e44ad'}),
-            html.Pre(id='rcsb-details', style={
-                'border': '1px solid #8e44ad',
-                'padding': '10px',
-                'overflowY': 'scroll',
-                'maxHeight': '300px',
-                'backgroundColor': '#f4ecf7'
-            }),
-        ], style={'width': '45%', 'float': 'right', 'padding': '10px'}),
-    ], style={'display': 'flex', 'justifyContent': 'space-between'}),
+    # Graphs
+    html.Div([
+        dcc.Graph(id='comparison-plot-1'),
+        dcc.Graph(id='comparison-plot-2')
+    ]),
 ])
 
 @app.callback(
     [Output('record-index', 'children'),
-     Output('biogrid-details', 'children'),
-     Output('rcsb-details', 'children'),
+     Output('record-details', 'children'),
      Output('comparison-plot-1', 'figure'),
      Output('comparison-plot-2', 'figure')],
     [Input('prev-button', 'n_clicks'),
@@ -103,28 +92,26 @@ app.layout = html.Div([
 )
 def update_dashboard(prev_clicks, next_clicks, current_index):
     if combined_data is None or combined_data.empty:
-        return "No data available", "", "", go.Figure(), go.Figure()
+        return "No data available", "No records found", go.Figure(), go.Figure()
 
     if current_index is None:
         current_index = 0
     else:
-        current_index = int(current_index.split(": ")[1])
+        current_index = int(current_index.split(": ")[-1])
     
     new_index = current_index + (1 if next_clicks > prev_clicks else -1)
     new_index = max(0, min(len(combined_data) - 1, new_index))
     
     current_record = combined_data.iloc[new_index]
-
-    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns if 'biogrid' in col])
-    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns if 'rcsb' in col])
-
+    record_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns])
+    
     figure1 = go.Figure(data=[go.Scatter(x=combined_data['molecular_weight'], y=combined_data['ph'], mode='markers')])
     figure1.update_layout(title='Molecular Weight vs pH', xaxis_title='Molecular Weight', yaxis_title='pH')
     
     figure2 = go.Figure(data=[go.Scatter(x=combined_data['temp_k'], y=combined_data['molecular_weight'], mode='markers')])
     figure2.update_layout(title='Temperature vs Molecular Weight', xaxis_title='Temperature (K)', yaxis_title='Molecular Weight')
 
-    return f"Current index: {new_index}", biogrid_details, rcsb_details, figure1, figure2
+    return f"Current index: {new_index}", record_details, figure1, figure2
 
 server = app.server
 
