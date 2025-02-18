@@ -26,9 +26,14 @@ except Exception as e:
 
 # Realizar el JOIN en SQL directamente en PostgreSQL
 join_query = """
-    SELECT * FROM biogrid_homosapiens
+    SELECT biogrid_homosapiens.official_symbol, biogrid_homosapiens.identifier_id,
+           biogrid_homosapiens.identifier_type, biogrid_homosapiens.aliases,
+           rcsb_pdb.macromolecule_name, rcsb_pdb.experimental_method,
+           rcsb_pdb.molecular_weight, rcsb_pdb.ph, rcsb_pdb.temp_k
+    FROM biogrid_homosapiens
     INNER JOIN rcsb_pdb
     ON LOWER(TRIM(biogrid_homosapiens.official_symbol)) = LOWER(TRIM(rcsb_pdb.macromolecule_name))
+    LIMIT 5000
 """
 
 try:
@@ -44,6 +49,11 @@ if combined_data is not None:
     combined_data = combined_data.sample(frac=0.1, random_state=42)
     print(combined_data.head(5))  # Muestra las primeras 5 filas del dataset combinado
 
+if combined_data is None or combined_data.empty:
+    print("⚠️ Error: combined_data está vacío en Dash.")
+else:
+    print(f"✅ Datos disponibles en Dash: {len(combined_data)} registros.")
+
 # Cerrar conexión
 conn.close()
 
@@ -52,67 +62,38 @@ app = dash.Dash(__name__)
 server = app.server  # Exponer el servidor Flask
 
 app.layout = html.Div([
-    html.H1("Comparative Analysis Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
+    html.H1("Comparative Analysis Dashboard", style={'textAlign': 'center', 'marginBottom': '20px', 'color': '#2c3e50'}),
     
     # Record navigation
     html.Div([
-        html.Button("Previous", id='prev-button', n_clicks=0),
-        html.Button("Next", id='next-button', n_clicks=0),
-        html.Div(id='record-index', style={'marginTop': '10px'}),
+        html.Button("Previous", id='prev-button', n_clicks=0, style={'backgroundColor': '#3498db', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'marginRight': '10px'}),
+        html.Button("Next", id='next-button', n_clicks=0, style={'backgroundColor': '#2ecc71', 'color': 'white', 'border': 'none', 'padding': '10px 20px'}),
+        html.Div(id='record-index', style={'marginTop': '10px', 'color': '#34495e', 'fontWeight': 'bold'}),
     ], style={'textAlign': 'center', 'marginBottom': '20px'}),
 
     # Main container split into two columns
     html.Div([
-        # Left column: Graphs and BIOGRID data
         html.Div([
-            html.H3("Comparison Graphs"),
+            html.H3("Comparison Graphs", style={'color': '#16a085'}),
             dcc.Graph(id='comparison-plot-1'),
             dcc.Graph(id='comparison-plot-2'),
-            html.H3("BIOGRID Data"),
-            html.Pre(id='biogrid-details', style={'border': '1px solid black', 'padding': '10px'}),
+            html.H3("BIOGRID Data", style={'color': '#e67e22'}),
+            html.Pre(id='biogrid-details', style={'border': '1px solid #e67e22', 'padding': '10px', 'backgroundColor': '#fdf2e9'}),
         ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
 
-        # Right column: RCSB data and insights
         html.Div([
-            html.H3("RCSB Data"),
+            html.H3("RCSB Data", style={'color': '#8e44ad'}),
             html.Pre(id='rcsb-details', style={
-                'border': '1px solid black',
+                'border': '1px solid #8e44ad',
                 'padding': '10px',
                 'overflowY': 'scroll',
-                'maxHeight': '300px'
-            }),
-            html.Div([
-                html.H3("Biomedical and Genetic Insights"),
-                html.P("The data presented in this dashboard integrates molecular interaction information (BIOGRID) "
-                       "and structural details of macromolecules (RCSB PDB). This combination offers valuable insights "
-                       "into the genetic and biochemical mechanisms underlying human physiology and disease."),
-                html.P("Potential biomedical applications include:"),
-                html.Ul([
-                    html.Li("**Drug Discovery**: Identifying potential drug targets by analyzing protein structures and "
-                            "their interaction patterns."),
-                    html.Li("**Gene Function Analysis**: Elucidating the functional roles of genes and proteins in "
-                            "biological pathways by studying interaction networks."),
-                    html.Li("**Precision Medicine**: Supporting personalized therapeutic approaches by linking structural "
-                            "variations to specific genetic markers.")
-                ]),
-                html.P("A unique aspect of this analysis is the integration of two comprehensive datasets—BIOGRID and RCSB PDB—which allows "
-                       "for predictive modeling. The presence of an objective variable, **HIT**, provides a foundation for "
-                       "machine learning approaches to predict key biological interactions. Additionally, the inclusion of "
-                       "structural and functional information on macromolecules like **Notum** and **Furin** enhances the ability "
-                       "to explore critical biochemical pathways."),
-                html.P("This data-driven approach empowers researchers to uncover novel therapeutic strategies and "
-                       "enhance our understanding of human biology at a molecular level by linking genetic insights with macromolecular data." 
-                       "You can access the Python script in the repository https://github.com/kentvalerach/Polimeromic")
-            ], style={
-                'marginTop': '20px',
-                'padding': '10px',
-                'border': '1px solid black',
-                'backgroundColor': '#f9f9f9',
-                'lineHeight': '1.6'
+                'maxHeight': '300px',
+                'backgroundColor': '#f4ecf7'
             }),
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'}),
     ], style={'display': 'flex', 'justifyContent': 'space-between'}),
 ])
+
 @app.callback(
     [Output('record-index', 'children'),
      Output('biogrid-details', 'children'),
@@ -124,79 +105,23 @@ app.layout = html.Div([
     [State('record-index', 'children')]
 )
 def update_dashboard(prev_clicks, next_clicks, current_index):
-    global combined_data  # Asegurar acceso a la variable global
+    if combined_data is None or combined_data.empty:
+        return "No data available", "", "", go.Figure(), go.Figure()
 
-    if combined_data is None or len(combined_data) == 0:
-        return "No data available", "", "", {}, {}
-
-    # Convertir a Pandas antes de usar .iloc
-    combined_data_pd = combined_data.to_pandas()
-
-    # Determinar el índice actual
     if current_index is None:
         current_index = 0
     else:
         current_index = int(current_index.split(": ")[1])
-
-    # Ajustar el índice basado en los botones
+    
     new_index = current_index + (1 if next_clicks > prev_clicks else -1)
-    new_index = max(0, min(len(combined_data_pd) - 1, new_index))
+    new_index = max(0, min(len(combined_data) - 1, new_index))
+    
+    current_record = combined_data.iloc[new_index]
 
-    # Obtener el registro actual
-    current_record = combined_data_pd.iloc[new_index]
+    biogrid_details = f"Official Symbol: {current_record['official_symbol']}\nIdentifier: {current_record['identifier_id']}\nType: {current_record['identifier_type']}"
+    rcsb_details = f"Macromolecule Name: {current_record['macromolecule_name']}\nExperimental Method: {current_record['experimental_method']}\nMolecular Weight: {current_record['molecular_weight']}"
 
-    # BIOGRID details: mostrar todas las columnas
-    biogrid_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" for col in biogrid_data.columns
-    ])
-
-    # RCSB details: mostrar todas las columnas
-    rcsb_details = "\n".join([
-        f"{col}: {current_record.get(col, 'N/A')}" for col in rcsb_data.columns
-    ])
-
-    # Gráficos dinámicos con contexto y punto resaltado
-    comparison_plot_1 = {
-        'data': [
-            {'x': combined_data_pd["percent_solvent_content"],
-             'y': combined_data_pd["ph"],
-             'mode': 'markers',
-             'marker': {'color': 'lightblue', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["percent_solvent_content"]],
-             'y': [current_record["ph"]],
-             'mode': 'markers',
-             'marker': {'color': 'blue', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
-        ],
-        'layout': {
-            'title': 'Percent Solvent Content vs pH',
-            'xaxis': {'title': 'Percent Solvent Content'},
-            'yaxis': {'title': 'pH'}
-        }
-    }
-
-    comparison_plot_2 = {
-        'data': [
-            {'x': combined_data_pd["temp_k"],
-             'y': combined_data_pd["molecular_weight"],
-             'mode': 'markers',
-             'marker': {'color': 'lightgreen', 'size': 8},
-             'name': 'All Records'},
-            {'x': [current_record["temp_k"]],
-             'y': [current_record["molecular_weight"]],
-             'mode': 'markers',
-             'marker': {'color': 'green', 'size': 12, 'symbol': 'star'},
-             'name': 'Selected Record'},
-        ],
-        'layout': {
-            'title': 'Temperature (K) vs Molecular Weight',
-            'xaxis': {'title': 'Temp (K)'},
-            'yaxis': {'title': 'Molecular Weight'}
-        }
-    }
-
-    return f"Current index: {new_index}", biogrid_details, rcsb_details, comparison_plot_1, comparison_plot_2
+    return f"Current index: {new_index}", biogrid_details, rcsb_details, go.Figure(), go.Figure()
 
 server = app.server
 
