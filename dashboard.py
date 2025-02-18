@@ -119,9 +119,15 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
     current_record = combined_data.iloc[new_index]
 
     biogrid_details = f"Official Symbol: {current_record['official_symbol']}\nIdentifier: {current_record['identifier_id']}\nType: {current_record['identifier_type']}"
-    rcsb_details = f"Macromolecule Name: {current_record['macromolecule_name']}\nExperimental Method: {current_record['experimental_method']}\nMolecular Weight: {current_record['molecular_weight']}"
+    rcsb_details = f"Macromolecule Name: {current_record['macromolecule_name']}\nExperimental Method: {current_record['experimental_method']}\nMolecular Weight: {current_record['molecular_weight']}\n pH: {current_record['ph']}\n Temperature: {current_record['temp_k']}"
 
-    return f"Current index: {new_index}", biogrid_details, rcsb_details, go.Figure(), go.Figure()
+    figure1 = go.Figure(data=[go.Scatter(x=combined_data['molecular_weight'], y=combined_data['ph'], mode='markers')])
+    figure1.update_layout(title='Molecular Weight vs pH', xaxis_title='Molecular Weight', yaxis_title='pH')
+    
+    figure2 = go.Figure(data=[go.Scatter(x=combined_data['temp_k'], y=combined_data['molecular_weight'], mode='markers')])
+    figure2.update_layout(title='Temperature vs Molecular Weight', xaxis_title='Temperature (K)', yaxis_title='Molecular Weight')
+
+    return f"Current index: {new_index}", biogrid_details, rcsb_details, figure1, figure2
 
 server = app.server
 
