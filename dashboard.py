@@ -70,24 +70,24 @@ app.layout = html.Div([
 
     # Main container split into two columns
     html.Div([
+        # Left column: Graphs and BIOGRID data
         html.Div([
             html.H3("Comparison Graphs"),
             dcc.Graph(id='comparison-plot-1'),
-            dcc.Graph(id='comparison-plot-2')
-        ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
-        
-        html.Div([
+            dcc.Graph(id='comparison-plot-2'),
             html.Div([
                 html.H3("BIOGRID_Homosapiens Data"),
                 html.Pre(id='biogrid-details', style={'border': '1px solid black', 'padding': '10px'}),
             ], style={'border': '1px solid black', 'padding': '10px', 'marginTop': '20px'})
         ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
         
+        # Right column: RCSB data and insights
         html.Div([
             html.Div([
                 html.H3("RCSB_PDB Data"),
                 html.Pre(id='rcsb-details', style={'border': '1px solid black', 'padding': '10px', 'overflowY': 'scroll', 'maxHeight': '300px'}),
             ], style={'border': '1px solid black', 'padding': '10px', 'marginTop': '20px'}),
+            
             html.Div([
                 html.H3("Biomedical and Genetic Insights"),
                 html.P("The data presented in this dashboard integrates molecular interaction information (BIOGRID) "
@@ -102,15 +102,8 @@ app.layout = html.Div([
                     html.Li("**Precision Medicine**: Supporting personalized therapeutic approaches by linking structural "
                             "variations to specific genetic markers.")
                 ]),
-                html.P("A unique aspect of this analysis is the integration of two comprehensive datasets—BIOGRID and RCSB PDB—which allows "
-                       "for predictive modeling. The presence of an objective variable, **HIT**, provides a foundation for "
-                       "machine learning approaches to predict key biological interactions. Additionally, the inclusion of "
-                       "structural and functional information on macromolecules like **Notum** and **Furin** enhances the ability "
-                       "to explore critical biochemical pathways."),
-                html.P("This data-driven approach empowers researchers to uncover novel therapeutic strategies and "
-                       "enhance our understanding of human biology at a molecular level by linking genetic insights with macromolecular data." 
-                       "You can access the Python script in the repository https://github.com/kentvalerach/Polimeromic")
-            ], style={'marginTop': '20px', 'padding': '10px', 'border': '1px solid black', 'backgroundColor': '#f9f9f9', 'lineHeight': '1.6'})
+                html.P("You can access the Python script in the repository https://github.com/kentvalerach/Polimeromic")
+            ], style={'border': '1px solid black', 'padding': '10px', 'marginTop': '20px'})
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'})
     ], style={'display': 'flex', 'justifyContent': 'space-between'})
 ])
@@ -135,8 +128,23 @@ def update_data(prev_clicks, next_clicks, current_index):
     current_record = combined_data.iloc[new_index]
     return f"Current index: {new_index}", current_record[:10].to_string(), current_record[11:].to_string()
 
+# Callback para actualizar los gráficos
+@app.callback(
+    [Output('comparison-plot-1', 'figure'),
+     Output('comparison-plot-2', 'figure')],
+    [Input('prev-button', 'n_clicks'),
+     Input('next-button', 'n_clicks')]
+)
+def update_graphs(prev_clicks, next_clicks):
+    if combined_data is None or combined_data.empty:
+        return go.Figure(), go.Figure()
+    figure1 = go.Figure(data=[go.Scatter(x=combined_data['molecular_weight'], y=combined_data['ph'], mode='markers', marker=dict(color='green', symbol='star'))])
+    figure1.update_layout(title='Molecular Weight vs pH', xaxis_title='Molecular Weight', yaxis_title='pH')
+    figure2 = go.Figure(data=[go.Scatter(x=combined_data['temp_k'], y=combined_data['molecular_weight'], mode='markers', marker=dict(color='blue', symbol='star'))])
+    figure2.update_layout(title='Temperature vs Molecular Weight', xaxis_title='Temperature (K)', yaxis_title='Molecular Weight')
+    return figure1, figure2
+
 server = app.server
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
- 
