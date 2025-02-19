@@ -112,8 +112,8 @@ def update_data(prev_clicks, next_clicks, current_index):
     
     current_record = combined_data.iloc[new_index]
     
-    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[:6]])
-    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[7:]])
+    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[:10]])
+    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[11:]])
 
     return f"Current index: {new_index}", biogrid_details, rcsb_details 
 
