@@ -101,7 +101,7 @@ app.layout = html.Div([
                     html.Li("**Precision Medicine**: Supporting personalized therapeutic approaches by linking structural "
                             "variations to specific genetic markers.")
                 ]),
-                html.P("This is an independent Bioinformatics study by Kent Valera Chirinos")
+                html.P("This is an independent Bioinformatics study by Kent Valera Chirinos"
                 "The project combines data from two main sources:BIOGRID: a database focused on molecular interactions," 
                 " in particular genes and proteins relevant to Homo sapiens.RCSB PDB: repository of structural and biophysical" 
                 " data on macromolecules, including proteins and nucleic acids. You can access the scripts and data"
