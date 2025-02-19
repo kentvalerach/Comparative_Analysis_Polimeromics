@@ -70,6 +70,12 @@ app.layout = html.Div([
 
     # Main container split into two columns
     html.Div([
+        html.Div([
+            html.H3("Comparison Graphs"),
+            dcc.Graph(id='comparison-plot-1'),
+            dcc.Graph(id='comparison-plot-2')
+        ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
+    html.Div([
     html.Div([
         html.H3("Comparison Graphs"),
         dcc.Graph(id='comparison-plot-1'),
@@ -87,6 +93,7 @@ app.layout = html.Div([
         html.Pre(id='rcsb-details', style={'border': '1px solid black', 'padding': '10px', 'overflowY': 'scroll', 'maxHeight': '300px'}),
     ], style={'border': '1px solid black', 'padding': '10px', 'width': '45%', 'float': 'right'}),
 ], style={'display': 'flex', 'justifyContent': 'space-between'}),
+
 
 @app.callback(
     [Output('record-index', 'children'),
@@ -113,7 +120,7 @@ def update_data(prev_clicks, next_clicks, current_index):
     biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[:8]])
     rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[9:]])
 
-    return f"Current index: {new_index}", biogrid_details, rcsb_details 
+    return f"Current index: {new_index}", biogrid_details, rcsb_details
 
 @app.callback(
     [Output('comparison-plot-1', 'figure'),
