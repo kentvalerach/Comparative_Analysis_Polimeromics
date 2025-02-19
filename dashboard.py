@@ -105,7 +105,7 @@ def update_dashboard(prev_clicks, next_clicks, current_index):
         return "No data available", "", "", go.Figure(), go.Figure()
 
     if current_index is None:
-        current_index = 0
+        current_index = 0 
     else:
         current_index = int(current_index.split(": ")[1])
     
