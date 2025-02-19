@@ -177,7 +177,24 @@ figure1.update_layout(title='Molecular Weight vs pH', xaxis_title='Molecular Wei
         name='Selected Record'
     )
 ])
+    figure2 = go.Figure(data=[
+    go.Scatter(
+        x=combined_data['temp_k'],
+        y=combined_data['molecular_weight'],
+        mode='markers',
+        marker=dict(color='lightblue', size=8, symbol='circle'),
+        name='All Records'
+    ),
+    go.Scatter(
+        x=[combined_data.iloc[-1]['temp_k']],
+        y=[combined_data.iloc[-1]['molecular_weight']],
+        mode='markers',
+        marker=dict(color='blue', size=12, symbol='star'),
+        name='Selected Record'
+    )
+])
 figure2.update_layout(title='Temperature vs Molecular Weight', xaxis_title='Temperature (K)', yaxis_title='Molecular Weight')
+
 
 
 server = app.server
