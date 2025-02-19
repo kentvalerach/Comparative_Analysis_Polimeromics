@@ -73,7 +73,10 @@ app.layout = html.Div([
         html.Div([
             html.H3("Comparison Graphs"),
             dcc.Graph(id='comparison-plot-1'),
-            dcc.Graph(id='comparison-plot-2'),
+            dcc.Graph(id='comparison-plot-2')
+        ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
+        
+        html.Div([
             html.Div([
                 html.H3("BIOGRID_Homosapiens Data"),
                 html.Pre(id='biogrid-details', style={'border': '1px solid black', 'padding': '10px'}),
@@ -111,6 +114,26 @@ app.layout = html.Div([
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'})
     ], style={'display': 'flex', 'justifyContent': 'space-between'})
 ])
+
+# Callback para actualizar los datos
+@app.callback(
+    [Output('record-index', 'children'),
+     Output('biogrid-details', 'children'),
+     Output('rcsb-details', 'children')],
+    [Input('prev-button', 'n_clicks'),
+     Input('next-button', 'n_clicks')],
+    [State('record-index', 'children')]
+)
+def update_data(prev_clicks, next_clicks, current_index):
+    if combined_data is None or combined_data.empty:
+        return "No data available", "", ""
+    if current_index is None:
+        current_index = 0
+    else:
+        current_index = int(current_index.split(": ")[1])
+    new_index = max(0, min(len(combined_data) - 1, current_index + (1 if next_clicks > prev_clicks else -1)))
+    current_record = combined_data.iloc[new_index]
+    return f"Current index: {new_index}", current_record[:10].to_string(), current_record[11:].to_string()
 
 server = app.server
 
