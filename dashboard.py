@@ -152,19 +152,17 @@ def update_graphs(prev_clicks, next_clicks, current_index):
     new_index = max(0, min(len(combined_data) - 1, current_index + (1 if next_clicks > prev_clicks else -1)))
     current_record = combined_data.iloc[new_index]
 
-    # Gráfico 1: Molecular Weight vs pH
+    # Gráfico 1: Molecular Weight vs pH con sombra verde tenue
     figure1 = go.Figure()
 
-    # Agregar todos los puntos en color verde claro
     figure1.add_trace(go.Scatter(
         x=combined_data['molecular_weight'],
         y=combined_data['ph'],
         mode='markers',
-        marker=dict(size=8, color='lightgreen', symbol='circle'),
+        marker=dict(size=8, color='rgba(144, 238, 144, 0.5)', symbol='circle'),  # Verde claro con opacidad
         name="All Data"
     ))
 
-    # Agregar el punto seleccionado con un sombreado en estrella (verde más oscuro)
     figure1.add_trace(go.Scatter(
         x=[current_record['molecular_weight']],
         y=[current_record['ph']],
@@ -173,26 +171,33 @@ def update_graphs(prev_clicks, next_clicks, current_index):
         name="Selected Data"
     ))
 
+    # Agregar una sombra difusa con transparencia en el fondo
+    figure1.add_trace(go.Scatter(
+        x=combined_data['molecular_weight'],
+        y=combined_data['ph'],
+        mode='markers',
+        marker=dict(size=12, color='rgba(144, 238, 144, 0.2)'),  # Verde más tenue
+        showlegend=False
+    ))
+
     figure1.update_layout(
         title='Molecular Weight vs pH',
         xaxis_title='Molecular Weight',
         yaxis_title='pH',
-        plot_bgcolor='white'  # Quitar el fondo azul cuadriculado
+        plot_bgcolor='white'
     )
 
-    # Gráfico 2: Temperature vs Molecular Weight
+    # Gráfico 2: Temperature vs Molecular Weight con sombra azul tenue
     figure2 = go.Figure()
 
-    # Agregar todos los puntos en color azul claro
     figure2.add_trace(go.Scatter(
         x=combined_data['temp_k'],
         y=combined_data['molecular_weight'],
         mode='markers',
-        marker=dict(size=8, color='lightblue', symbol='circle'),
+        marker=dict(size=8, color='rgba(173, 216, 230, 0.5)', symbol='circle'),  # Azul claro con opacidad
         name="All Data"
     ))
 
-    # Agregar el punto seleccionado con un sombreado en estrella (azul más oscuro)
     figure2.add_trace(go.Scatter(
         x=[current_record['temp_k']],
         y=[current_record['molecular_weight']],
@@ -201,14 +206,24 @@ def update_graphs(prev_clicks, next_clicks, current_index):
         name="Selected Data"
     ))
 
+    # Agregar una sombra difusa con transparencia en el fondo
+    figure2.add_trace(go.Scatter(
+        x=combined_data['temp_k'],
+        y=combined_data['molecular_weight'],
+        mode='markers',
+        marker=dict(size=12, color='rgba(173, 216, 230, 0.2)'),  # Azul más tenue
+        showlegend=False
+    ))
+
     figure2.update_layout(
         title='Temperature vs Molecular Weight',
         xaxis_title='Temperature (K)',
         yaxis_title='Molecular Weight',
-        plot_bgcolor='white'  # Quitar el fondo azul cuadriculado
+        plot_bgcolor='white'
     )
 
     return figure1, figure2
+
 
 
 server = app.server
