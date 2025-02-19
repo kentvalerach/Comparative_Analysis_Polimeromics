@@ -122,19 +122,27 @@ app.layout = html.Div([
 def update_data(prev_clicks, next_clicks, current_index):
     if combined_data is None or combined_data.empty:
         return "No data available", "", ""
-    
+
     if current_index is None:
         current_index = 0
     else:
         current_index = int(current_index.split(": ")[1])
 
-    new_index = max(0, min(len(combined_data) - 1, current_index + (1 if next_clicks > prev_clicks else -1)))
+    # Ajustar correctamente el índice de navegación
+    if next_clicks > prev_clicks:
+        new_index = min(len(combined_data) - 1, current_index + 1)  # Avanzar con "Next"
+    elif prev_clicks > next_clicks:
+        new_index = max(0, current_index - 1)  # Retroceder con "Previous"
+    else:
+        new_index = current_index  # Mantenerse en el mismo índice si no se presiona nada
+
     current_record = combined_data.iloc[new_index]
 
     biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[:8]])
     rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[9:]])
 
     return f"Current index: {new_index}", biogrid_details, rcsb_details
+
 
 # Callbacks para actualizar graficos
 @app.callback(
