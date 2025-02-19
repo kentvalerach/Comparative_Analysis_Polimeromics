@@ -104,7 +104,7 @@ app.layout = html.Div([
                 html.P("This is an independent Bioinformatics study by Kent Valera Chirinos"
                 "The project combines data from two main sources: BIOGRID a database focused on molecular interactions," 
                 " in particular genes and proteins relevant to Homo sapiens. RCSB PDB repository of structural and biophysical" 
-                " data on macromolecules, including proteins and nucleic acids. You can access the scripts and data"
+                " data on macromolecules, including proteins and nucleic acids. You can access the scripts and data"),
                 html.A(" in the repository" , href="https://github.com/kentvalerach"),           
             ], style={'border': '1px solid black', 'padding': '10px', 'marginTop': '20px'})
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'})
