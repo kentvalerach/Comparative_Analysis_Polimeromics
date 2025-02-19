@@ -155,7 +155,7 @@ def update_graphs(prev_clicks, next_clicks, current_index):
     # Gráfico 1: Molecular Weight vs pH
     figure1 = go.Figure()
 
-    # Agregar todos los puntos en color verde
+    # Agregar todos los puntos en color verde claro
     figure1.add_trace(go.Scatter(
         x=combined_data['molecular_weight'],
         y=combined_data['ph'],
@@ -164,46 +164,48 @@ def update_graphs(prev_clicks, next_clicks, current_index):
         name="All Data"
     ))
 
-    # Agregar el punto seleccionado con un sombreado en estrella
+    # Agregar el punto seleccionado con un sombreado en estrella (verde más oscuro)
     figure1.add_trace(go.Scatter(
         x=[current_record['molecular_weight']],
         y=[current_record['ph']],
         mode='markers',
-        marker=dict(size=12, color='green', symbol='star'),
+        marker=dict(size=14, color='darkgreen', symbol='star'),
         name="Selected Data"
     ))
 
     figure1.update_layout(
         title='Molecular Weight vs pH',
         xaxis_title='Molecular Weight',
-        yaxis_title='pH'
+        yaxis_title='pH',
+        plot_bgcolor='white'  # Quitar el fondo azul cuadriculado
     )
 
     # Gráfico 2: Temperature vs Molecular Weight
     figure2 = go.Figure()
 
-    # Agregar todos los puntos en color azul
+    # Agregar todos los puntos en color azul claro
     figure2.add_trace(go.Scatter(
         x=combined_data['temp_k'],
         y=combined_data['molecular_weight'],
         mode='markers',
-        marker=dict(size=8, color='blue', symbol='circle'),
+        marker=dict(size=8, color='lightblue', symbol='circle'),
         name="All Data"
     ))
 
-    # Agregar el punto seleccionado con un sombreado en estrella
+    # Agregar el punto seleccionado con un sombreado en estrella (azul más oscuro)
     figure2.add_trace(go.Scatter(
         x=[current_record['temp_k']],
         y=[current_record['molecular_weight']],
         mode='markers',
-        marker=dict(size=12, color='blue', symbol='star'),
+        marker=dict(size=14, color='blue', symbol='star'),
         name="Selected Data"
     ))
 
     figure2.update_layout(
         title='Temperature vs Molecular Weight',
         xaxis_title='Temperature (K)',
-        yaxis_title='Molecular Weight'
+        yaxis_title='Molecular Weight',
+        plot_bgcolor='white'  # Quitar el fondo azul cuadriculado
     )
 
     return figure1, figure2
