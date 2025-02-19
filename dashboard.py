@@ -137,30 +137,69 @@ def update_data(prev_clicks, next_clicks, current_index):
     [Output('comparison-plot-1', 'figure'),
      Output('comparison-plot-2', 'figure')],
     [Input('prev-button', 'n_clicks'),
-     Input('next-button', 'n_clicks')]
+     Input('next-button', 'n_clicks')],
+    [State('record-index', 'children')]
 )
-def update_graphs(prev_clicks, next_clicks):
+def update_graphs(prev_clicks, next_clicks, current_index):
     if combined_data is None or combined_data.empty:
         return go.Figure(), go.Figure()
 
-    figure1 = go.Figure(data=[go.Scatter(
+    if current_index is None:
+        current_index = 0
+    else:
+        current_index = int(current_index.split(": ")[1])
+
+    new_index = max(0, min(len(combined_data) - 1, current_index + (1 if next_clicks > prev_clicks else -1)))
+    current_record = combined_data.iloc[new_index]
+
+    # Gráfico 1: Molecular Weight vs pH
+    figure1 = go.Figure()
+
+    # Agregar todos los puntos en color verde
+    figure1.add_trace(go.Scatter(
         x=combined_data['molecular_weight'],
         y=combined_data['ph'],
         mode='markers',
-        marker=dict(size=8, color='lightgreen', symbol='circle')
-    )])
+        marker=dict(size=8, color='lightgreen', symbol='circle'),
+        name="All Data"
+    ))
+
+    # Agregar el punto seleccionado con un sombreado en estrella
+    figure1.add_trace(go.Scatter(
+        x=[current_record['molecular_weight']],
+        y=[current_record['ph']],
+        mode='markers',
+        marker=dict(size=12, color='green', symbol='star'),
+        name="Selected Data"
+    ))
+
     figure1.update_layout(
         title='Molecular Weight vs pH',
         xaxis_title='Molecular Weight',
         yaxis_title='pH'
     )
 
-    figure2 = go.Figure(data=[go.Scatter(
+    # Gráfico 2: Temperature vs Molecular Weight
+    figure2 = go.Figure()
+
+    # Agregar todos los puntos en color azul
+    figure2.add_trace(go.Scatter(
         x=combined_data['temp_k'],
         y=combined_data['molecular_weight'],
         mode='markers',
-        marker=dict(size=8, color='blue', symbol='circle')
-    )])
+        marker=dict(size=8, color='blue', symbol='circle'),
+        name="All Data"
+    ))
+
+    # Agregar el punto seleccionado con un sombreado en estrella
+    figure2.add_trace(go.Scatter(
+        x=[current_record['temp_k']],
+        y=[current_record['molecular_weight']],
+        mode='markers',
+        marker=dict(size=12, color='blue', symbol='star'),
+        name="Selected Data"
+    ))
+
     figure2.update_layout(
         title='Temperature vs Molecular Weight',
         xaxis_title='Temperature (K)',
@@ -168,7 +207,6 @@ def update_graphs(prev_clicks, next_clicks):
     )
 
     return figure1, figure2
-
 
 
 server = app.server
