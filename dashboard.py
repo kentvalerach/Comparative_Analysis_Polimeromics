@@ -70,25 +70,23 @@ app.layout = html.Div([
 
     # Main container split into two columns
     html.Div([
+    html.Div([
+        html.H3("Comparison Graphs"),
+        dcc.Graph(id='comparison-plot-1'),
+        dcc.Graph(id='comparison-plot-2'),
+        
         html.Div([
-            html.H3("Comparison Graphs"),
-            dcc.Graph(id='comparison-plot-1'),
-            dcc.Graph(id='comparison-plot-2')
-        ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
+            html.H3("BIOGRID_Homosapiens Data"),
+            html.Pre(id='biogrid-details', style={'border': '1px solid black', 'padding': '10px'}),
+        ], style={'border': '1px solid black', 'padding': '10px', 'marginTop': '20px'}),
+        
+    ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
 
-        html.Div([
-            html.Div([
-                html.H3("BIOGRID_Homosapiens Data"),
-                html.Pre(id='biogrid-details', style={'border': '1px solid black', 'padding': '10px'}),
-            ], style={'border': '1px solid black', 'padding': '10px', 'marginBottom': '10px'}),
-
-            html.Div([
-                html.H3("RCSB_PDB Data"),
-                html.Pre(id='rcsb-details', style={'border': '1px solid black', 'padding': '10px', 'overflowY': 'scroll', 'maxHeight': '300px'}),
-            ], style={'border': '1px solid black', 'padding': '10px'})
-        ], style={'width': '45%', 'float': 'right', 'padding': '10px'}),
-    ], style={'display': 'flex', 'justifyContent': 'space-between'}),
-])
+    html.Div([
+        html.H3("RCSB_PDB Data"),
+        html.Pre(id='rcsb-details', style={'border': '1px solid black', 'padding': '10px', 'overflowY': 'scroll', 'maxHeight': '300px'}),
+    ], style={'border': '1px solid black', 'padding': '10px', 'width': '45%', 'float': 'right'}),
+], style={'display': 'flex', 'justifyContent': 'space-between'}),
 
 @app.callback(
     [Output('record-index', 'children'),
