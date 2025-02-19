@@ -70,7 +70,6 @@ app.layout = html.Div([
 
     # Main container split into two columns
     html.Div([
-        # Left column: Graphs and BIOGRID data
         html.Div([
             html.H3("Comparison Graphs"),
             dcc.Graph(id='comparison-plot-1'),
@@ -107,8 +106,7 @@ app.layout = html.Div([
         ], style={'width': '45%', 'float': 'right', 'padding': '10px'})
     ], style={'display': 'flex', 'justifyContent': 'space-between'})
 ])
-
-# Callback para actualizar los datos
+# Callback para actualizar datos
 @app.callback(
     [Output('record-index', 'children'),
      Output('biogrid-details', 'children'),
@@ -120,19 +118,21 @@ app.layout = html.Div([
 def update_data(prev_clicks, next_clicks, current_index):
     if combined_data is None or combined_data.empty:
         return "No data available", "", ""
+    
     if current_index is None:
         current_index = 0
     else:
         current_index = int(current_index.split(": ")[1])
+
     new_index = max(0, min(len(combined_data) - 1, current_index + (1 if next_clicks > prev_clicks else -1)))
     current_record = combined_data.iloc[new_index]
+
     biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[:10]])
-rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[10:]])
+    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[10:]])
 
-return f"Current index: {new_index}", biogrid_details, rcsb_details
+    return f"Current index: {new_index}", biogrid_details, rcsb_details
 
-
-# Callback para actualizar los gráficos
+# Callbacks para actualizar graficos
 @app.callback(
     [Output('comparison-plot-1', 'figure'),
      Output('comparison-plot-2', 'figure')],
@@ -142,43 +142,32 @@ return f"Current index: {new_index}", biogrid_details, rcsb_details
 def update_graphs(prev_clicks, next_clicks):
     if combined_data is None or combined_data.empty:
         return go.Figure(), go.Figure()
-      
-figure1 = go.Figure(data=[
-    go.Scatter(
+
+    figure1 = go.Figure(data=[go.Scatter(
         x=combined_data['molecular_weight'],
         y=combined_data['ph'],
         mode='markers',
-        marker=dict(color='lightgreen', size=8, symbol='circle'),
-        name='All Records'
-    ),
-    go.Scatter(
-        x=[combined_data.iloc[-1]['molecular_weight']],
-        y=[combined_data.iloc[-1]['ph']],
-        mode='markers',
-        marker=dict(color='green', size=12, symbol='star'),
-        name='Selected Record'
+        marker=dict(size=8, color='lightgreen', symbol='circle')
+    )])
+    figure1.update_layout(
+        title='Molecular Weight vs pH',
+        xaxis_title='Molecular Weight',
+        yaxis_title='pH'
     )
-])
-figure1.update_layout(title='Molecular Weight vs pH', xaxis_title='Molecular Weight', yaxis_title='pH')
 
-figure2 = go.Figure(data=[
-    go.Scatter(
+    figure2 = go.Figure(data=[go.Scatter(
         x=combined_data['temp_k'],
         y=combined_data['molecular_weight'],
         mode='markers',
-        marker=dict(color='lightblue', size=8, symbol='circle'),
-        name='All Records'
-    ),
-    go.Scatter(
-        x=[combined_data.iloc[-1]['temp_k']],
-        y=[combined_data.iloc[-1]['molecular_weight']],
-        mode='markers',
-        marker=dict(color='blue', size=12, symbol='star'),
-        name='Selected Record'
+        marker=dict(size=8, color='blue', symbol='circle')
+    )])
+    figure2.update_layout(
+        title='Temperature vs Molecular Weight',
+        xaxis_title='Temperature (K)',
+        yaxis_title='Molecular Weight'
     )
-])
 
-figure2.update_layout(title='Temperature vs Molecular Weight', xaxis_title='Temperature (K)', yaxis_title='Molecular Weight')
+    return figure1, figure2
 
 
 
