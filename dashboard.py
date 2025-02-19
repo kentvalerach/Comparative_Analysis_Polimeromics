@@ -75,25 +75,20 @@ app.layout = html.Div([
             dcc.Graph(id='comparison-plot-1'),
             dcc.Graph(id='comparison-plot-2')
         ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
-    html.Div([
-    html.Div([
-        html.H3("Comparison Graphs"),
-        dcc.Graph(id='comparison-plot-1'),
-        dcc.Graph(id='comparison-plot-2'),
         
         html.Div([
-            html.H3("BIOGRID_Homosapiens Data"),
-            html.Pre(id='biogrid-details', style={'border': '1px solid black', 'padding': '10px'}),
-        ], style={'border': '1px solid black', 'padding': '10px', 'marginTop': '20px'}),
-        
-    ], style={'width': '45%', 'float': 'left', 'padding': '10px'}),
-
-    html.Div([
-        html.H3("RCSB_PDB Data"),
-        html.Pre(id='rcsb-details', style={'border': '1px solid black', 'padding': '10px', 'overflowY': 'scroll', 'maxHeight': '300px'}),
-    ], style={'border': '1px solid black', 'padding': '10px', 'width': '45%', 'float': 'right'}),
-], style={'display': 'flex', 'justifyContent': 'space-between'}),
-
+            html.Div([
+                html.H3("BIOGRID_Homosapiens Data"),
+                html.Pre(id='biogrid-details', style={'border': '1px solid black', 'padding': '10px'}),
+            ], style={'border': '1px solid black', 'padding': '10px', 'marginTop': '20px'}),
+            
+            html.Div([
+                html.H3("RCSB_PDB Data"),
+                html.Pre(id='rcsb-details', style={'border': '1px solid black', 'padding': '10px', 'overflowY': 'scroll', 'maxHeight': '300px'}),
+            ], style={'border': '1px solid black', 'padding': '10px', 'marginTop': '20px'})
+        ], style={'width': '45%', 'float': 'right', 'padding': '10px'})
+    ], style={'display': 'flex', 'justifyContent': 'space-between'})
+])
 
 @app.callback(
     [Output('record-index', 'children'),
@@ -117,8 +112,8 @@ def update_data(prev_clicks, next_clicks, current_index):
     
     current_record = combined_data.iloc[new_index]
     
-    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[:8]])
-    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[9:]])
+    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[:10]])
+    rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[11:]])
 
     return f"Current index: {new_index}", biogrid_details, rcsb_details
 
