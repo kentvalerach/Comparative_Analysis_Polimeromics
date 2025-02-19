@@ -126,7 +126,11 @@ def update_data(prev_clicks, next_clicks, current_index):
         current_index = int(current_index.split(": ")[1])
     new_index = max(0, min(len(combined_data) - 1, current_index + (1 if next_clicks > prev_clicks else -1)))
     current_record = combined_data.iloc[new_index]
-    return f"Current index: {new_index}", current_record[:10].to_string(), current_record[11:].to_string()
+    biogrid_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[:10]])
+rcsb_details = "\n".join([f"{col}: {current_record[col]}" for col in combined_data.columns[10:]])
+
+return f"Current index: {new_index}", biogrid_details, rcsb_details
+
 
 # Callback para actualizar los gráficos
 @app.callback(
@@ -138,14 +142,45 @@ def update_data(prev_clicks, next_clicks, current_index):
 def update_graphs(prev_clicks, next_clicks):
     if combined_data is None or combined_data.empty:
         return go.Figure(), go.Figure()
-    figure1 = go.Figure(data=[go.Scatter(x=combined_data['molecular_weight'], y=combined_data['ph'], mode='markers', marker=dict(color='green', symbol='star'))])
-    figure1.update_layout(title='Molecular Weight vs pH', xaxis_title='Molecular Weight', yaxis_title='pH')
-    figure2 = go.Figure(data=[go.Scatter(x=combined_data['temp_k'], y=combined_data['molecular_weight'], mode='markers', marker=dict(color='blue', symbol='star'))])
-    figure2.update_layout(title='Temperature vs Molecular Weight', xaxis_title='Temperature (K)', yaxis_title='Molecular Weight')
-    return figure1, figure2
+      
+    figure1 = go.Figure(data=[
+    go.Scatter(
+        x=combined_data['molecular_weight'],
+        y=combined_data['ph'],
+        mode='markers',
+        marker=dict(color='lightgreen', size=8, symbol='circle'),
+        name='All Records'
+    ),
+    go.Scatter(
+        x=[combined_data.iloc[-1]['molecular_weight']],
+        y=[combined_data.iloc[-1]['ph']],
+        mode='markers',
+        marker=dict(color='green', size=12, symbol='star'),
+        name='Selected Record'
+    )
+])
+figure1.update_layout(title='Molecular Weight vs pH', xaxis_title='Molecular Weight', yaxis_title='pH')
+
+    figure2 = go.Figure(data=[
+    go.Scatter(
+        x=combined_data['temp_k'],
+        y=combined_data['molecular_weight'],
+        mode='markers',
+        marker=dict(color='lightblue', size=8, symbol='circle'),
+        name='All Records'
+    ),
+    go.Scatter(
+        x=[combined_data.iloc[-1]['temp_k']],
+        y=[combined_data.iloc[-1]['molecular_weight']],
+        mode='markers',
+        marker=dict(color='blue', size=12, symbol='star'),
+        name='Selected Record'
+    )
+])
+figure2.update_layout(title='Temperature vs Molecular Weight', xaxis_title='Temperature (K)', yaxis_title='Molecular Weight')
+
 
 server = app.server
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
- 
